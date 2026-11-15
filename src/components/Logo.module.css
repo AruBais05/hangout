@@ -1,0 +1,28 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.mark {
+  border-radius: 24%;
+  flex: none;
+}
+
+.word {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.ink .word {
+  color: var(--purple);
+}
+
+.white .word {
+  color: var(--white);
+}
