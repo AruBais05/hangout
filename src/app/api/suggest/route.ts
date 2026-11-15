@@ -156,9 +156,19 @@ export async function POST(request: NextRequest) {
     const reply = AiReply.parse(parseJson(text));
 
     const names = aiMembers.map((m) => m.name).sort();
+    // Models sometimes split one plan across two objects (first fields, then the rest).
+    // Rejoin a piece that has no title onto the plan before it.
+    const items: Record<string, unknown>[] = [];
+    for (const raw of reply.plans) {
+      if (!raw || typeof raw !== "object") continue;
+      const obj = raw as Record<string, unknown>;
+      const prev = items[items.length - 1];
+      if (!("title" in obj) && prev && !("search_hint" in prev)) Object.assign(prev, obj);
+      else items.push({ ...obj });
+    }
     const valid: PlanCard[] = [];
     const dropped: string[] = []; // which rule failed (no user content), for dev logs only
-    for (const raw of reply.plans) {
+    for (const raw of items) {
       const r = AiPlan.safeParse(raw);
       if (!r.success) {
         dropped.push(`shape:${r.error.issues.map((i) => i.path.join(".")).join("+")}`);
@@ -218,6 +228,7 @@ export async function POST(request: NextRequest) {
     logSource("suggest", "ai", started);
     return Response.json(result);
   } catch (err) {
+    if (process.env.NODE_ENV !== "production") console.info(`[suggest] fell back: ${err instanceof Error ? err.message.slice(0, 160) : "error"}`);
     logSource("suggest", err instanceof RateLimited ? "sample(429)" : "sample", started);
     const hit = cacheGet<SuggestResult>(key);
     return Response.json(hit ? { ...hit, source: "cache" } : { ...samples(), events });

@@ -31,8 +31,10 @@ export default function Room() {
   const joined = Math.min(state.crewJoined, crew.length);
   const [filling, setFilling] = useState(false);
   const [msg, setMsg] = useState("");
-  const inCount = joined + (state.joined ? 1 : 0);
-  const allIn = inCount === m.people;
+  const real = state.cloudMembers; // people who joined from your invite (Supabase mode)
+  const inCount = joined + (state.joined ? 1 : 0) + real.length;
+  // Everyone expected is in, or real friends have joined and you've answered: you can start.
+  const allIn = inCount >= m.people || (state.joined && real.length > 0);
   const big = isBig(m);
   const areaKey = (id: string) => { const c = crew.find((x) => x.id === id); return c ? crewPoint(m, c).join(",") : id; };
 
@@ -72,7 +74,7 @@ export default function Room() {
   // The link carries the group's details, so it works on a friend's phone with no account.
   const host = state.me.name || state.profile?.name || "";
   async function shareInvite() {
-    const link = inviteUrl(window.location.origin, m, host, state.groupQuiz);
+    const link = linkFor();
     try {
       if (navigator.share) {
         await navigator.share({ title: `${host || "A friend"} invited you to hang out`, url: link });
@@ -86,8 +88,15 @@ export default function Room() {
     }
   }
 
+  // Shared room: a short link with the room code. Otherwise the link carries the group itself.
+  function linkFor() {
+    return state.room
+      ? `${window.location.origin}/join?r=${state.room.code}`
+      : inviteUrl(window.location.origin, m, host, state.groupQuiz);
+  }
+
   function openInvite() {
-    window.open(inviteUrl(window.location.origin, m, host, state.groupQuiz), "_blank", "noopener");
+    window.open(linkFor(), "_blank", "noopener");
   }
 
   const next = needsUnlock(state) ? "/room/unlock" : "/room/ideas";
@@ -111,6 +120,7 @@ export default function Room() {
           Invite link
         </h2>
         <p className={styles.link}>
+          {state.room ? <>Code {state.room.code} · </> : null}
           {purposeOf(m).label} · {m.city}
         </p>
         <button type="button" className={s.secondary} onClick={shareInvite}>
@@ -149,7 +159,19 @@ export default function Room() {
             </span>
             {state.joined && <span className={s.chipYellow}>{PERSONALITIES[myType(state)].name}</span>}
           </li>
-          {crew.map((c, i) => {
+          {real.map((x) => (
+            <li key={x.id} className={`${s.row} ${styles.arrived}`}>
+              <span className={s.avatarJoined} aria-hidden="true">
+                {x.name[0]}
+              </span>
+              <span className={s.grow}>
+                {x.name} · {x.area || "Nearby"}
+                <span className={s.sub}>Joined from your invite</span>
+              </span>
+              <span className={s.chip}>{PERSONALITIES[x.type].name}</span>
+            </li>
+          ))}
+          {(state.crewJoined > 0 ? crew : crew.slice(0, Math.max(0, crew.length - real.length))).map((c, i) => {
             const here = i < joined;
             return (
               <li key={c.id} className={`${s.row} ${here ? styles.arrived : ""}`}>
@@ -221,7 +243,7 @@ export default function Room() {
           </Link>
         ) : (
           <button type="button" className={s.primary} disabled>
-            Waiting for {m.people - inCount} more
+            Waiting for {Math.max(1, m.people - inCount)} more
           </button>
         )}
       </div>

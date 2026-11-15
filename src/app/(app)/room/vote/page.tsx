@@ -1,14 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { crewOf, crewVotes, isBig, meetingOf, rankIdeas, tally, winnerOf } from "@/lib/plan";
+import { updateRoom } from "@/lib/cloud";
 import { update, useDemo } from "@/lib/store";
 import styles from "./vote.module.css";
-
-const VOTE_SECONDS = 90;
 
 export default function Vote() {
   const [state] = useDemo();
@@ -19,23 +16,9 @@ export default function Vote() {
   const total = Object.values(votes).reduce((a, b) => a + b, 0);
   const win = winnerOf(state, ideas);
 
-  // The clock is read only in the browser, after mount.
-  const [now, setNow] = useState<number | null>(null);
-  const left =
-    now === null || state.voteEndsAt === null ? VOTE_SECONDS : Math.max(0, Math.ceil((state.voteEndsAt - now) / 1000));
-  const ended = state.votingEnded || left === 0;
-
-  useEffect(() => {
-    if (ended) return;
-    if (state.voteEndsAt === null) update({ voteEndsAt: Date.now() + VOTE_SECONDS * 1000 });
-    const tick = () => setNow(Date.now());
-    const first = requestAnimationFrame(tick);
-    const t = setInterval(tick, 1000);
-    return () => {
-      cancelAnimationFrame(first);
-      clearInterval(t);
-    };
-  }, [ended, state.voteEndsAt]);
+  // No timer: friends can open the room and vote any time. The host ends voting.
+  const ended = state.votingEnded;
+  const waiting = Math.max(0, m.people - total);
 
   const next = isBig(m) ? "/room/in" : "/room/pay";
 
@@ -45,11 +28,7 @@ export default function Vote() {
         <h1 className={s.title}>{ended ? "The crew picked" : "Votes are in"}</h1>
         {!ended && (
           <span className={styles.timer}>
-            <Icon name="clock" size={16} />
-            <span className={s.money}>
-              {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}
-            </span>
-            <span className="visually-hidden">left to vote</span>
+            {total} voted
           </span>
         )}
       </div>
@@ -57,7 +36,7 @@ export default function Vote() {
       {ended && (
         <section className={s.cardYellow} aria-live="polite">
           <p className={styles.winLabel}>
-            Winner, {votes[win.id]} of {m.people} votes
+            Winner, {votes[win.id]} of {Object.values(votes).reduce((a, b) => a + b, 0)} votes
           </p>
           <p className={styles.winTitle}>{win.title}</p>
           <p>{win.whenLabel}</p>
@@ -68,7 +47,8 @@ export default function Vote() {
         {ideas.map((idea) => {
           const n = votes[idea.id];
           const names = [
-            ...crewOf(m)
+            ...state.cloudMembers.filter((x) => x.vote === idea.id).map((x) => x.name),
+            ...(state.crewJoined > 0 || !state.cloudMembers.length ? crewOf(m) : [])
               .filter((c) => byMember[c.id] === idea.id)
               .map((c) => c.name),
             ...(state.myVote === idea.id ? ["You"] : []),
@@ -96,11 +76,22 @@ export default function Vote() {
             {isBig(m) ? "Ask who's really in" : "Lock the plan"}
           </Link>
         ) : (
-          <button type="button" className={s.primary} onClick={() => update({ votingEnded: true })}>
+          <button
+            type="button"
+            className={s.primary}
+            onClick={() => {
+              update({ votingEnded: true });
+              if (state.room?.host) void updateRoom({ voting_ended: true });
+            }}
+          >
             End voting
           </button>
         )}
-        <p className={s.small}>{ended ? " " : "Voting also ends when the timer runs out."}</p>
+        <p className={s.small}>
+          {ended
+            ? " "
+            : `Friends can vote any time from the invite link${waiting ? `; ${waiting} more expected` : ""}. End voting when you're ready.`}
+        </p>
       </div>
     </div>
   );

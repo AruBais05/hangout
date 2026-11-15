@@ -100,7 +100,18 @@ export default function Plan() {
               <span className={state.paid ? styles.paidLabel : s.small}>{state.paid ? "Paid" : "Waiting"}</span>
               <span className="visually-hidden">You: {state.paid ? "paid" : "not paid yet"}</span>
             </li>
-            {crew.map((c, i) => {
+            {state.cloudMembers.map((x) => (
+              <li key={x.id}>
+                <span className={x.paid ? styles.paid : styles.waiting} aria-hidden="true">
+                  {x.name[0]}
+                </span>
+                <span className={x.paid ? styles.paidLabel : s.small}>{x.paid ? "Paid" : "Waiting"}</span>
+                <span className="visually-hidden">
+                  {x.name}: {x.paid ? "paid" : "hasn't paid yet"}
+                </span>
+              </li>
+            ))}
+            {(state.crewJoined > 0 || !state.cloudMembers.length ? crew : []).map((c, i) => {
               const paid = i < paidCount;
               return (
                 <li key={c.id}>

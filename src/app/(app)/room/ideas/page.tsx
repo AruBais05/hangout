@@ -10,11 +10,11 @@ import { AI } from "@/lib/config";
 import { eventsSearchUrl } from "@/lib/maps";
 import { formatCents, formatPrice } from "@/lib/money";
 import { dayLabel, isBig, meetingOf, myName, rankIdeas, suggestInput, workableRange } from "@/lib/plan";
+import { setMine, updateRoom } from "@/lib/cloud";
 import { update, useDemo } from "@/lib/store";
 import { inputKey, planCount, samplePlans, type SuggestInput, type SuggestResult } from "@/lib/suggest";
 import styles from "./ideas.module.css";
 
-const VOTE_SECONDS = 90;
 const LOCAL_PREFIX = "hangout-plans:";
 
 function readLocal(key: string): SuggestResult | null {
@@ -82,6 +82,8 @@ export default function Ideas() {
     job.then((result) => {
       if (result.source !== "sample") writeLocal(key, result);
       update({ suggest: { key, result } });
+      // Shared room: everyone votes on the host's list.
+      if (state.room?.host) void updateRoom({ plans: { key, result }, voting_ended: false });
       inflight.current = null;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,6 +95,7 @@ export default function Ideas() {
     const result = await fetchPlans(input, true);
     if (result.source !== "sample") writeLocal(key, result);
     update({ suggest: { key, result }, myVote: null });
+    if (state.room?.host) void updateRoom({ plans: { key, result }, voting_ended: false });
     setRefreshing(false);
   }
 
@@ -111,7 +114,8 @@ export default function Ideas() {
   }
 
   function vote() {
-    update({ myVote: chosen, votingEnded: false, voteEndsAt: Date.now() + VOTE_SECONDS * 1000 });
+    update({ myVote: chosen, votingEnded: false });
+    if (state.room) void setMine(state.room.id, { vote: chosen });
     router.push("/room/vote");
   }
 

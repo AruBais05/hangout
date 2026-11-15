@@ -5,6 +5,7 @@ import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { PLAN_FEATURES, PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
+import { currentAccount } from "@/lib/auth";
 import { useDemo } from "@/lib/store";
 import styles from "./plans.module.css";
 
@@ -56,7 +57,7 @@ export default function Plans() {
             Manage Crew Pass
           </Link>
         ) : (
-          <Link href={state.session ? "/pass" : "/signup"} className={s.primary}>
+          <Link href={currentAccount(state) ? "/pass" : "/signup"} className={s.primary}>
             Get Crew Pass – {formatPrice(PRICES.passYearlyCents)}/year
           </Link>
         )}

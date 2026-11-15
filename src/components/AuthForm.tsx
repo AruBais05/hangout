@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { googleDemo, logIn, signUp } from "@/lib/auth";
+import { googleSignIn, logIn, realGoogle, signUp } from "@/lib/auth";
+import { cloudOn } from "@/lib/supabase";
 import { useDemo } from "@/lib/store";
 import s from "./demo/screen.module.css";
 import styles from "./AuthForm.module.css";
@@ -29,9 +30,9 @@ export default function AuthForm({ mode }: { mode: "signup" | "login" }) {
     router.push(after);
   }
 
-  function google() {
-    googleDemo(name);
-    router.push(after);
+  async function google() {
+    await googleSignIn(name, after);
+    if (!realGoogle) router.push(after);
   }
 
   return (
@@ -45,13 +46,17 @@ export default function AuthForm({ mode }: { mode: "signup" | "login" }) {
         </p>
       </div>
 
-      <button type="button" className={s.secondary} onClick={google}>
-        <span className={styles.g} aria-hidden="true">
-          G
-        </span>
-        Continue with Google (demo)
-      </button>
-      <p className={styles.or}>or</p>
+      {(!cloudOn || realGoogle) && (
+        <>
+          <button type="button" className={s.secondary} onClick={google}>
+            <span className={styles.g} aria-hidden="true">
+              G
+            </span>
+            {realGoogle ? "Continue with Google" : "Continue with Google (demo)"}
+          </button>
+          <p className={styles.or}>or</p>
+        </>
+      )}
 
       <div className={styles.fields}>
         {signup && (
@@ -101,7 +106,11 @@ export default function AuthForm({ mode }: { mode: "signup" | "login" }) {
             </>
           )}
         </p>
-        <p className={s.small}>Demo account, saved in this browser. Your password is stored only as a hash.</p>
+        <p className={s.small}>
+          {cloudOn
+            ? "Your account works on any device. Passwords are handled by Supabase and never stored by Hangout."
+            : "Demo account, saved in this browser. Your password is stored only as a hash."}
+        </p>
       </div>
     </form>
   );

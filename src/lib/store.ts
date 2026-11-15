@@ -83,8 +83,31 @@ export type DemoState = {
   spentThisMonth: number; // cents you paid this month (shares + expenses), for My spending
   profile: Profile | null; // remembered free-user profile, this device only
   accounts: Account[];
-  session: string | null; // logged-in account id
+  session: string | null; // logged-in account id (browser-only mode)
+  // Supabase mode (only when configured):
+  cloudUser: CloudUser | null; // signed-in account; null for guests and in browser-only mode
+  room: { id: string; code: string; host: boolean } | null; // the shared room in the database
+  cloudMembers: CloudMember[]; // real people in the room (live)
+  roomBudget: BudgetRangeId | null; // the group's lowest budget range, never who chose it
   crewAreas: Record<string, string>; // "city|memberId" → neighborhood name
+};
+
+export type CloudUser = { id: string; email: string; name: string; crewPass: boolean };
+
+/** A real person in a shared room (from the database). Budgets are never included. */
+export type CloudMember = {
+  id: string;
+  user_id: string;
+  name: string;
+  type: Personality;
+  area: string;
+  point: [number, number] | null;
+  travel: number;
+  venmo: string;
+  cells: Record<string, CellState>;
+  vote: string | null;
+  paid: boolean;
+  is_host: boolean;
 };
 
 export type Expense = { id: string; payer: string; what: string; amountCents: number; handle: string };
@@ -120,6 +143,10 @@ export const INITIAL: DemoState = {
   profile: null,
   accounts: [],
   session: null,
+  cloudUser: null,
+  room: null,
+  cloudMembers: [],
+  roomBudget: null,
   crewAreas: {},
 };
 
@@ -153,7 +180,7 @@ function migrate(raw: Record<string, unknown>): DemoState {
       expectedSize: m.expectedSize ?? sizeFor(m.people ?? 5),
     } as Meeting;
   }
-  for (const k of ["expenses", "settled", "accounts"] as const) if (!Array.isArray(s[k])) (s as Record<string, unknown>)[k] = [];
+  for (const k of ["expenses", "settled", "accounts", "cloudMembers"] as const) if (!Array.isArray(s[k])) (s as Record<string, unknown>)[k] = [];
   return s;
 }
 
@@ -196,9 +223,10 @@ export function update(patch: Partial<DemoState> | ((s: DemoState) => Partial<De
 
 /** Starts a new meeting but keeps the Crew Pass, your Venmo, your spending and known neighborhoods. */
 export function newMeeting(meeting: Meeting, groupQuiz: GroupQuiz, venmoHandle?: string) {
-  const { pass, crewAreas, spentThisMonth, venmoHandle: prev, profile, accounts, session } = load();
+  const { pass, crewAreas, spentThisMonth, venmoHandle: prev, profile, accounts, session, cloudUser } = load();
   update({
     ...INITIAL,
+    cloudUser,
     pass,
     crewAreas,
     spentThisMonth,

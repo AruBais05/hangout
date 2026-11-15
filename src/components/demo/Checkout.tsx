@@ -6,6 +6,7 @@ import Icon from "@/components/Icon";
 import { DEMO_CARD, PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
 import { activatePass } from "@/lib/auth";
+import { accessToken } from "@/lib/supabase";
 import { update, useDemo, type PassPlan } from "@/lib/store";
 import s from "./screen.module.css";
 import styles from "./Checkout.module.css";
@@ -86,10 +87,11 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
     setPaying(true);
     setStripeError("");
     try {
+      const token = await accessToken();
       const res = await fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item, plan, back: item === "pass" ? "/pass" : "/room/unlock/pay" }),
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ item, plan, back: item === "pass" ? "/pass" : "/room/unlock/pay", roomId: state.room?.id }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Stripe didn't answer.");

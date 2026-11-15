@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import CityField from "@/components/CityField";
+import { createRoom, updateRoom } from "@/lib/cloud";
+import { cloudOn } from "@/lib/supabase";
 import { cleanHandle } from "@/lib/split";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
@@ -47,6 +49,9 @@ export default function Start() {
     // background, once; everyone who joins gets the same questions.
     const demo: GroupQuiz = { source: "demo", questions: DEMO_QUIZ };
     newMeeting(meeting, demo, cleanHandle(venmoValue));
+    // Supabase mode: the hangout becomes a shared room, so friends' answers and votes reach you.
+    const hostName = state.cloudUser?.name || state.profile?.name || "";
+    const roomReady = cloudOn ? createRoom(meeting, demo, hostName, cleanHandle(venmoValue)) : Promise.resolve(null);
     fetch("/api/quiz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -54,10 +59,11 @@ export default function Start() {
     })
       .then((r) => r.json())
       .then((q: GroupQuiz) => {
-        if (q?.questions?.length) update((st) => (st.joined ? {} : { groupQuiz: q }));
+        if (!q?.questions?.length) return;
+        update((st) => (st.joined ? {} : { groupQuiz: q }));
+        void roomReady.then((room) => room && updateRoom({ group_quiz: q }));
       })
       .catch(() => {});
-    // Big plans pay first (unlock or Crew Pass), then set up the crew.
     // Big plans keep setting up; they unlock right before the ideas.
     router.push("/start/people");
   }

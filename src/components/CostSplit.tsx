@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import { formatCents } from "@/lib/money";
-import { crewOf, meetingOf, myName } from "@/lib/plan";
+import { addExpense, removeExpense, setSettled } from "@/lib/cloud";
+import { everyone, myName } from "@/lib/plan";
 import { cleanHandle, settleUp, venmoUrl } from "@/lib/split";
 import { update, useDemo } from "@/lib/store";
 import s from "./demo/screen.module.css";
@@ -13,9 +14,9 @@ import styles from "./CostSplit.module.css";
 /** Crew Pass: shared expenses split evenly, then the fewest payments to settle up. */
 export default function CostSplit({ title }: { title: string }) {
   const [state] = useDemo();
-  const m = meetingOf(state);
   const me = myName(state);
-  const members = [me, ...crewOf(m).map((c) => c.name)];
+  const members = [me, ...everyone(state).map((c) => c.name)];
+  const room = state.room;
   const [payer, setPayer] = useState(me);
   const [what, setWhat] = useState("");
   const [amount, setAmount] = useState("");
@@ -46,6 +47,14 @@ export default function CostSplit({ title }: { title: string }) {
     if (!Number.isFinite(cents) || cents <= 0 || cents > 1000000) return setError("Enter an amount between $0.01 and $10,000.");
     setError("");
     const h = cleanHandle(handle);
+    if (room) {
+      // Shared room: saved for everyone; the live update brings it back into the list.
+      void addExpense(room.id, { payer, what: what.trim().slice(0, 40), amountCents: cents, handle: h });
+      if (payer === me) update((st) => ({ spentThisMonth: st.spentThisMonth + cents }));
+      setWhat("");
+      setAmount("");
+      return;
+    }
     update((st) => ({
       expenses: [...st.expenses, { id: `${Date.now()}`, payer, what: what.trim().slice(0, 40), amountCents: cents, handle: h }],
       // What you paid counts toward your private spending.
@@ -57,6 +66,10 @@ export default function CostSplit({ title }: { title: string }) {
   }
 
   function remove(id: string) {
+    if (room) {
+      void removeExpense(id);
+      return;
+    }
     update((st) => {
       const gone = st.expenses.find((x) => x.id === id);
       return {
@@ -68,6 +81,7 @@ export default function CostSplit({ title }: { title: string }) {
   }
 
   function toggle(key: string) {
+    if (room) void setSettled(room.id, key, !state.settled.includes(key));
     update((st) => ({ settled: st.settled.includes(key) ? st.settled.filter((k) => k !== key) : [...st.settled, key] }));
   }
 

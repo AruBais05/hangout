@@ -7,7 +7,10 @@ import Icon from "@/components/Icon";
 import LocationPicker, { type Picked } from "@/components/LocationPicker";
 import { BUDGET_RANGES, DEAL_BREAKERS, DEMO_QUIZ, PEOPLE, PERSONALITIES, SLOTS, SLOT_HOURS, TRAVEL_MINUTES, type QuizQuestion, type TravelMinutes } from "@/lib/config";
 import { calendarBusy, cellKey, dayLabel, days, meetingOf, personalityOf, purposeOf, quizOf } from "@/lib/plan";
+import GuestRoom from "@/components/GuestRoom";
 import { forgetProfile, saveProfile } from "@/lib/auth";
+import { joinRoom, updateRoom, type JoinData } from "@/lib/cloud";
+import { cloudOn } from "@/lib/supabase";
 import { decodeInvite, type Invite } from "@/lib/invite";
 import { cleanHandle } from "@/lib/split";
 import { EMPTY_ME, update, useDemo, type CellState, type Me } from "@/lib/store";
@@ -23,6 +26,14 @@ type Step = { kind: "welcome" } | { kind: "times" } | { kind: "fixed"; id: Fixed
 
 /** Waits for saved demo state, so a returning user's answers are filled in. */
 export default function JoinFlow({ guest = false }: { guest?: boolean }) {
+  const [, ready0] = useDemo();
+  // Supabase invite (/join?r=CODE): the shared room page handles joining, voting and paying.
+  const code = ready0 && guest && cloudOn ? new URLSearchParams(window.location.search).get("r") : null;
+  if (code) return <GuestRoom code={code} />;
+  return <LocalJoin guest={guest} />;
+}
+
+function LocalJoin({ guest }: { guest: boolean }) {
   const [state, ready] = useDemo();
   if (!ready) return <div className={s.screen} aria-busy="true" />;
   // Guests: the invite link carries the group (?g=...). Read only after hydration, in the browser.
@@ -47,7 +58,9 @@ export default function JoinFlow({ guest = false }: { guest?: boolean }) {
   return <Flow guest={guest} invite={invite} />;
 }
 
-function Flow({ guest, invite }: { guest: boolean; invite: Invite | null }) {
+/** The join questions. `onJoined` gets the answers (used by shared rooms); the host's answers
+ *  are also saved to the shared room when there is one. */
+export function Flow({ guest, invite, onJoined }: { guest: boolean; invite: Invite | null; onJoined?: (d: JoinData) => void }) {
   const router = useRouter();
   const [state] = useDemo();
   const m = invite?.meeting ?? meetingOf(state);
@@ -170,6 +183,7 @@ function Flow({ guest, invite }: { guest: boolean; invite: Invite | null }) {
       type,
       venmo: cleanHandle(venmo),
     });
+    const data: JoinData = { name, type, area: me.area, point: me.point, travel: me.travel, venmo: cleanHandle(venmo), cells, budget: me.budget };
     if (!guest) {
       update({
         cells,
@@ -180,7 +194,14 @@ function Flow({ guest, invite }: { guest: boolean; invite: Invite | null }) {
         meeting: { ...m, city: city.name, center: city.center },
         joined: true,
       });
+      // Shared room: the host joins it too, and the room gets the host's name, Venmo and city.
+      const room = state.room;
+      if (room?.host) {
+        void joinRoom(room.id, data, true);
+        void updateRoom({ host_name: name, host_venmo: data.venmo, meeting: { ...m, city: city.name, center: city.center } });
+      }
     }
+    onJoined?.(data);
     go({ kind: "result" });
   }
 

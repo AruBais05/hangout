@@ -96,8 +96,30 @@ export function crewOf(m: Meeting): Member[] {
   return [...CREW_POOL, ...extra].slice(0, n);
 }
 
+/** Real people in the shared room (Supabase mode), as crew members. Budgets stay private:
+ *  everyone counts as the group's lowest range, which is all the plans need. */
+export function realCrew(s: DemoState): Member[] {
+  const m = meetingOf(s);
+  return s.cloudMembers.map((x) => ({
+    id: `real-${x.id}`,
+    name: x.name,
+    type: x.type,
+    budget: s.roomBudget ?? "50to100",
+    offset: x.point ? [x.point[0] - m.center[0], x.point[1] - m.center[1]] : [0, 0],
+    travel: ([15, 30, 45] as const).find((v) => v === x.travel) ?? 30,
+  }));
+}
+
+/** Demo crew counts unless real people have joined and the demo crew hasn't been added. */
+export function demoCrew(s: DemoState): Member[] {
+  return s.crewJoined > 0 || s.cloudMembers.length === 0 ? crewOf(meetingOf(s)) : [];
+}
+
+/** Everyone besides you: real people first, then the demo crew. */
+export const everyone = (s: DemoState): Member[] => [...realCrew(s), ...demoCrew(s)];
+
 /** People who have actually joined (demo crew + you). */
-export const joinedCount = (s: DemoState) => s.crewJoined + (s.joined ? 1 : 0);
+export const joinedCount = (s: DemoState) => s.crewJoined + (s.joined ? 1 : 0) + s.cloudMembers.length;
 
 /** A big plan: a trip, an expected size of 10+, or 10+ seats. */
 export function isBig(m: Meeting): boolean {
@@ -147,7 +169,7 @@ export function myPoint(s: DemoState): [number, number] {
 
 export function groupMidpoint(s: DemoState): [number, number] {
   const m = meetingOf(s);
-  const pts = [myPoint(s), ...crewOf(m).map((c) => crewPoint(m, c))];
+  const pts = [myPoint(s), ...everyone(s).map((c) => crewPoint(m, c))];
   return [
     Number((pts.reduce((a, p) => a + p[0], 0) / pts.length).toFixed(4)),
     Number((pts.reduce((a, p) => a + p[1], 0) / pts.length).toFixed(4)),
@@ -212,7 +234,8 @@ export function memberFree(member: Member, m: Meeting): Set<string> {
 export function freeCounts(s: DemoState): Record<string, number> {
   const m = meetingOf(s);
   const counts: Record<string, number> = {};
-  for (const member of crewOf(m)) for (const k of memberFree(member, m)) counts[k] = (counts[k] ?? 0) + 1;
+  for (const member of demoCrew(s)) for (const k of memberFree(member, m)) counts[k] = (counts[k] ?? 0) + 1;
+  for (const real of s.cloudMembers) for (const [k, v] of Object.entries(real.cells ?? {})) if (v === "free") counts[k] = (counts[k] ?? 0) + 1;
   for (const [k, v] of Object.entries(s.cells)) if (v === "free") counts[k] = (counts[k] ?? 0) + 1;
   return counts;
 }
@@ -259,8 +282,7 @@ export const myType = (s: DemoState) =>
   Object.keys(s.answers).length === 0 && s.me.type ? s.me.type : personalityOf(s.answers, quizOf(s));
 
 export function groupMix(s: DemoState): { type: Personality; count: number }[] {
-  const m = meetingOf(s);
-  const types = crewOf(m).map((c) => c.type);
+  const types = everyone(s).map((c) => c.type);
   if (s.joined) types.push(myType(s));
   const counts = new Map<Personality, number>();
   for (const t of types) counts.set(t, (counts.get(t) ?? 0) + 1);
@@ -278,7 +300,7 @@ export function mixLabel(type: Personality, count: number): string {
 export function suggestInput(s: DemoState): SuggestInput {
   const m = meetingOf(s);
   const { day, slot } = bestCell(s);
-  const crew: SuggestMember[] = crewOf(m).map((c) => ({
+  const crew: SuggestMember[] = everyone(s).map((c) => ({
     name: c.name,
     type: c.type,
     budget: c.budget,
@@ -356,7 +378,7 @@ export function workableRange(s: DemoState): { low: number; high: number } {
 /** Demo friends' votes: most pick the top idea, a couple spread out. */
 export function crewVotes(s: DemoState, ideas: RankedIdea[]): Record<string, string> {
   const out: Record<string, string> = {};
-  crewOf(meetingOf(s)).forEach((c, i) => {
+  demoCrew(s).forEach((c, i) => {
     out[c.id] = ideas[i % 4 === 3 ? 1 : i % 5 === 4 ? 2 : 0]?.id ?? ideas[0].id;
   });
   return out;
@@ -365,6 +387,7 @@ export function crewVotes(s: DemoState, ideas: RankedIdea[]): Record<string, str
 export function tally(s: DemoState, ideas: RankedIdea[]): Record<string, number> {
   const t: Record<string, number> = Object.fromEntries(ideas.map((i) => [i.id, 0]));
   for (const id of Object.values(crewVotes(s, ideas))) t[id]++;
+  for (const real of s.cloudMembers) if (real.vote && real.vote in t) t[real.vote]++;
   if (s.myVote && s.myVote in t) t[s.myVote]++;
   return t;
 }

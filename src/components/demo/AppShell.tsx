@@ -6,6 +6,7 @@ import Icon from "@/components/Icon";
 import { useEffect } from "react";
 import { isBig, meetingOf, needsUnlock } from "@/lib/plan";
 import AccountMenu from "@/components/AccountMenu";
+import CloudSync from "@/components/CloudSync";
 import { useDemo } from "@/lib/store";
 import styles from "./AppShell.module.css";
 
@@ -41,6 +42,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={styles.page}>
+      <CloudSync />
       <header className={styles.header}>
         <Link href="/" className="wordmark">
           hangout

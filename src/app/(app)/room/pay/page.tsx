@@ -9,6 +9,7 @@ import styles from "../plan/plan.module.css";
 import { PRICES } from "@/lib/config";
 import { formatCents } from "@/lib/money";
 import { meetingOf, rankIdeas, shareBreakdown, winnerOf } from "@/lib/plan";
+import { setMine } from "@/lib/cloud";
 import { venmoUrl } from "@/lib/split";
 import { update, useDemo } from "@/lib/store";
 
@@ -22,6 +23,7 @@ export default function SettleUp() {
 
   function markPaid() {
     update((st) => ({ paid: true, spentThisMonth: st.spentThisMonth + (st.paid ? 0 : b.totalCents) }));
+    if (state.room) void setMine(state.room.id, { paid: true });
   }
 
   return (

@@ -38,6 +38,20 @@ All prices, rules, AI settings, partners, sample plans, quizzes and the demo cre
   Accounts live in localStorage; passwords are stored only as a salted SHA-256 hash (crypto.subtle).
   Logged-out Pass users fall back to free features. A demo switch for judges is in Settings.
 
+## Backend (optional, Supabase free plan)
+
+Without Supabase keys the app runs browser-only. With them you get real accounts on every device,
+shared rooms (friends' answers, votes, "I paid" and expenses reach everyone live) and short invite
+links (`/join?r=CODE`).
+
+1. Create a free project at supabase.com.
+2. SQL Editor → paste `supabase/schema.sql` → Run (tables, Row Level Security, live updates).
+3. Authentication → Sign In / Providers: turn on **Anonymous sign-ins** (friends join without an
+   account). For a demo, turn off "Confirm email" so sign-ups log in right away.
+4. Add to `.env.local` and Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   and the server-only `SUPABASE_SERVICE_ROLE_KEY` (saves Stripe-verified Crew Pass and unlocks).
+5. Optional real Google sign-in: enable Google in Supabase Auth, then set `NEXT_PUBLIC_GOOGLE_AUTH=true`.
+
 ## AI
 
 - Provider is a switch in `src/lib/config.ts` (`AI.provider`: `groq`, `gemini` or `anthropic`).

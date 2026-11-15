@@ -1,0 +1,71 @@
+.people,
+.plans {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.people li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wait {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  font-size: 0.95rem;
+}
+
+.plan {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px transparent;
+}
+
+.plan:hover {
+  background: var(--yellow-soft);
+}
+
+.picked {
+  background: var(--yellow);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.planTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.winner {
+  font-weight: 900;
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.settle {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
