@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import CityField from "@/components/CityField";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { DEFAULT_MEETING, DEMO_QUIZ, MAX_DAYS, PEOPLE, PRICES, PURPOSES, type GroupQuiz, type PurposeId, type Vibe } from "@/lib/config";
@@ -28,8 +29,11 @@ export default function Start() {
       : span > MAX_DAYS
         ? `Pick ${MAX_DAYS} days or fewer.`
         : "";
-  // Keep the last city the host picked; their map pin changes it later.
-  const { city, center } = meetingOf(state);
+  // Starts from the last city used; "Change city" (or the host's map pin later) moves everything.
+  const saved = meetingOf(state);
+  const [picked, setPicked] = useState<{ name: string; center: [number, number] } | null>(null);
+  const city = picked?.name ?? saved.city;
+  const center = picked?.center ?? saved.center;
   const meeting = { purpose, from, to, people, name, vibe, city, center };
   const big = isBig(meeting);
 
@@ -78,6 +82,11 @@ export default function Start() {
           ))}
         </div>
       </fieldset>
+
+      <div className={styles.group}>
+        <span className={s.label}>Where?</span>
+        <CityField value={city} onChange={setPicked} />
+      </div>
 
       <fieldset className={styles.group}>
         <legend className={s.label}>What&rsquo;s the vibe?</legend>

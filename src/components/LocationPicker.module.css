@@ -83,3 +83,20 @@
   border: 3px solid var(--ink);
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
 }
+
+.cityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.cityName {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}

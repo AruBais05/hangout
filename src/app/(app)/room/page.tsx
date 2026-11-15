@@ -32,12 +32,12 @@ export default function Room() {
   const inCount = joined + (state.joined ? 1 : 0);
   const allIn = inCount === m.people;
   const big = isBig(m);
-  const areaKey = (id: string) => `${m.city}|${id}`;
+  const areaKey = (id: string) => { const c = crew.find((x) => x.id === id); return c ? crewPoint(m, c).join(",") : id; };
 
   // Neighborhood names for the demo crew's rough areas (asked one at a time; the server caches them).
   const asking = useRef<string | null>(null);
   const missingIds = ready ? crew.filter((c) => !(areaKey(c.id) in state.crewAreas)).map((c) => c.id) : [];
-  const missingKey = missingIds.length ? `${m.city}|${missingIds.join(",")}` : "";
+  const missingKey = missingIds.length ? `${m.center.join(",")}|${missingIds.join(",")}` : "";
   useEffect(() => {
     if (!missingKey || asking.current === missingKey) return;
     asking.current = missingKey;

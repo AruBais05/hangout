@@ -112,8 +112,11 @@ function Flow({ guest }: { guest: boolean }) {
 
   function picked(p: Picked) {
     setMe((x) => ({ ...x, point: p.point, area: p.area || p.city || "Nearby" }));
-    // The host's pin sets the group's city; the demo crew moves with it.
-    if (!guest && p.city) setCity({ name: p.city, center: p.point });
+    // The host's pin sets the group's city right away; the demo crew and plans move with it.
+    if (!guest && p.city) {
+      setCity({ name: p.city, center: p.point });
+      update((st) => (st.meeting ? { meeting: { ...st.meeting, city: p.city, center: p.point } } : {}));
+    }
   }
 
   function answer(qi: number, ai: number) {

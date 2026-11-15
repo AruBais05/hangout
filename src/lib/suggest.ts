@@ -122,17 +122,19 @@ function toCard(p: SamplePlan, input: SuggestInput, i: number): PlanCard {
   const start = Math.min(input.window.from * 60 + p.offsetMinutes, latest);
   const types = [...new Set(input.members.map((m) => m.type))].filter((t) => p.fits.includes(t));
   const names = types.length ? types : p.fits;
+  const town = input.city.split(",")[0].trim();
+  const fill = (x: string) => x.replaceAll("{city}", town);
   return {
     id: `sample-${i}-${p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
     title: p.title,
-    summary: p.summary,
-    neighborhood: p.neighborhood,
+    summary: fill(p.summary),
+    neighborhood: fill(p.neighborhood),
     startTime: formatClock(Math.max(start, input.window.from * 60)),
     eachCents: p.eachCents,
     steps: p.steps,
     whyGroup: `Good for the ${names.map((t) => PERSONALITIES[t].plural.toLowerCase()).join(" and ")} in the group.`,
     whyFits: Object.fromEntries(input.members.map((m) => [m.name, fitLine(m.type, p.fits)])),
-    searchHint: p.searchHint,
+    searchHint: fill(p.searchHint),
     partnerName: p.partnerName,
     eventName: null,
   };

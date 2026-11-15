@@ -359,7 +359,7 @@ export const GENERIC_SAMPLES: SamplePlan[] = [
   {
     title: "Climbing gym, then dinner",
     summary: "Try easy climbing routes together, then share a casual dinner nearby.",
-    neighborhood: "Near the group's middle",
+    neighborhood: "Central {city}",
     offsetMinutes: 60,
     eachCents: 3500,
     steps: ["Meet at a climbing gym", "Climb for an hour", "Casual dinner nearby"],
@@ -371,7 +371,7 @@ export const GENERIC_SAMPLES: SamplePlan[] = [
   {
     title: "Board game café night",
     summary: "Pick a few games, order snacks, and settle in for a cozy evening.",
-    neighborhood: "Near the group's middle",
+    neighborhood: "Central {city}",
     offsetMinutes: 30,
     eachCents: 1500,
     steps: ["Meet at a board game café", "Play two or three games", "Dessert if you're hungry"],
@@ -383,7 +383,7 @@ export const GENERIC_SAMPLES: SamplePlan[] = [
   {
     title: "Comedy show, late bite",
     summary: "Catch a stand-up or improv show, then find late-night food.",
-    neighborhood: "Downtown",
+    neighborhood: "Downtown {city}",
     offsetMinutes: 90,
     eachCents: 2500,
     steps: ["Meet at a comedy club", "Watch the show", "Late-night food after"],
@@ -395,7 +395,7 @@ export const GENERIC_SAMPLES: SamplePlan[] = [
   {
     title: "Food hall crawl",
     summary: "Everyone picks one stall, then you share plates at one long table.",
-    neighborhood: "Downtown",
+    neighborhood: "Downtown {city}",
     offsetMinutes: 0,
     eachCents: 2500,
     steps: ["Meet at a food hall", "Each picks a stall", "Share at one table"],
@@ -407,7 +407,7 @@ export const GENERIC_SAMPLES: SamplePlan[] = [
   {
     title: "Bowling and arcade",
     summary: "A few frames of bowling and some arcade games with snacks.",
-    neighborhood: "Near the group's middle",
+    neighborhood: "Central {city}",
     offsetMinutes: 60,
     eachCents: 3000,
     steps: ["Meet at a bowling alley", "Bowl two games", "Arcade and snacks"],
