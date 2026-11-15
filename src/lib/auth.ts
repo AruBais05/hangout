@@ -1,5 +1,6 @@
 "use client";
 
+import { sha256Hex } from "./sha256";
 import { load, update, type Account, type DemoState, type Profile } from "./store";
 
 // Demo accounts, saved in this browser only. No backend.
@@ -9,12 +10,14 @@ import { load, update, type Account, type DemoState, type Profile } from "./stor
 const enc = new TextEncoder();
 const hex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
-export function cryptoReady(): boolean {
-  return typeof window !== "undefined" && !!window.crypto?.subtle;
-}
-
+/** Salted SHA-256. Uses crypto.subtle where the browser offers it (https, localhost) and the
+ *  built-in fallback elsewhere (e.g. http://<wifi-ip> on a phone). Both give the same hash. */
 export async function hashPassword(password: string, salt: string): Promise<string> {
-  return hex(await crypto.subtle.digest("SHA-256", enc.encode(`${salt}:${password}`)));
+  const bytes = enc.encode(`${salt}:${password}`);
+  if (typeof window !== "undefined" && window.crypto?.subtle) {
+    return hex(await crypto.subtle.digest("SHA-256", bytes));
+  }
+  return sha256Hex(bytes);
 }
 
 function newSalt(): string {
@@ -34,7 +37,6 @@ function startSession(a: Account) {
 }
 
 export async function signUp(name: string, email: string, password: string): Promise<string | null> {
-  if (!cryptoReady()) return "Sign-up needs a secure (https) page.";
   const e = normEmail(email);
   if (!name.trim()) return "Add your first name.";
   if (!validEmail(e)) return "Enter a valid email.";
@@ -78,7 +80,6 @@ export function googleDemo(name: string): void {
 }
 
 export async function logIn(email: string, password: string): Promise<string | null> {
-  if (!cryptoReady()) return "Log-in needs a secure (https) page.";
   const a = load().accounts.find((x) => x.email === normEmail(email) && !x.google);
   // Same message either way, so the form doesn't reveal which emails exist.
   if (!a || (await hashPassword(password, a.salt)) !== a.hash) return "Email or password is wrong.";
