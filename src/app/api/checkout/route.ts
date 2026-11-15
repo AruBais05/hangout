@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Bad request." }, { status: 400 });
   }
   const item: CheckoutItem = body.item === "pass" ? "pass" : "unlock";
-  const plan: PassPlan = body.plan === "monthly" ? "monthly" : "yearly";
+  const plan: PassPlan = "yearly";
   const back = body.back === "/pass" ? "/pass" : "/room/unlock/pay";
   const origin = request.nextUrl.origin;
 

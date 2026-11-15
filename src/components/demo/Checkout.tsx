@@ -47,7 +47,7 @@ function formatExpiry(v: string) {
 export default function Checkout({ item }: { item: "unlock" | "pass" }) {
   const router = useRouter();
   const [state] = useDemo();
-  const [plan, setPlan] = useState<PassPlan>("yearly");
+  const plan: PassPlan = "yearly"; // Crew Pass is yearly only
   const [f, setF] = useState<Fields>({ number: "", expiry: "", cvc: "", zip: "" });
   const [errors, setErrors] = useState<Errors>({});
   const [paying, setPaying] = useState(false);
@@ -72,14 +72,9 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
     zip: useRef<HTMLInputElement>(null),
   };
 
-  const priceCents =
-    item === "unlock"
-      ? PRICES.unlockCents
-      : plan === "yearly"
-        ? PRICES.passYearlyCents
-        : PRICES.passMonthlyCents;
+  const priceCents = item === "unlock" ? PRICES.unlockCents : PRICES.passYearlyCents;
   const title = item === "unlock" ? "Unlock this big plan" : "Get Crew Pass";
-  const next = item === "unlock" ? "/room/ideas" : (state.returnTo ?? "/room/recap");
+  const next = item === "unlock" ? "/start/people" : (state.returnTo ?? "/room/recap");
 
   function fillDemo() {
     setF({ number: DEMO_CARD, expiry: "12/30", cvc: "123", zip: "10001" });
@@ -138,13 +133,13 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
           <h1 className={s.title}>{item === "unlock" ? "Plan unlocked" : "Crew Pass is on"}</h1>
           <p className={s.lede}>
             {item === "unlock"
-              ? "Budget match, who's in, the cost split and reminders are on for this plan."
-              : "Unlimited big plans, the next hangout proposed for you, and your full group history."}
+              ? "Budget match, who's in and weekend dates are on for this plan."
+              : "5 vote options, unlimited big plans, cost split, your spending and full history."}
           </p>
         </div>
         <div className={s.actions}>
           <button type="button" className={s.primary} onClick={() => router.push(next)}>
-            {item === "unlock" ? "See the ideas" : "Continue"}
+            Continue
           </button>
         </div>
       </div>
@@ -182,37 +177,17 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
         <h1 className={s.title}>{title}</h1>
         <p className={s.lede} style={{ marginTop: 8 }}>
           {item === "unlock"
-            ? "One payment for this plan. It goes into the split."
-            : "For groups that plan big things often. Cancel any time."}
+            ? "One payment for this big plan, paid by the organizer."
+            : "5 vote options, unlimited big plans, cost split and your spending. Cancel any time."}
         </p>
       </div>
 
       {item === "pass" && (
-        <fieldset className={styles.switch}>
-          <legend className="visually-hidden">Billing</legend>
-          <label>
-            <input
-              type="radio"
-              name="plan"
-              checked={plan === "yearly"}
-              onChange={() => setPlan("yearly")}
-            />
-            <span>
-              Yearly <strong>{formatPrice(PRICES.passYearlyCents)}</strong>
-            </span>
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="plan"
-              checked={plan === "monthly"}
-              onChange={() => setPlan("monthly")}
-            />
-            <span>
-              Monthly <strong>{formatPrice(PRICES.passMonthlyCents)}</strong>
-            </span>
-          </label>
-        </fieldset>
+        <p className={styles.switch} style={{ padding: "14px 16px" }}>
+          <span>
+            Yearly <strong>{formatPrice(PRICES.passYearlyCents)}</strong>
+          </span>
+        </p>
       )}
 
       {mode === "stripe" && (

@@ -4,16 +4,14 @@ import Link from "next/link";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { PLAN_FEATURES, PRICES } from "@/lib/config";
-import { formatCents, formatPrice, splitCost } from "@/lib/money";
-import { bestCell, bigReasons, meetingOf } from "@/lib/plan";
+import { formatPrice } from "@/lib/money";
+import { AFTER_UNLOCK, bigReasons, meetingOf } from "@/lib/plan";
 import { update, useDemo } from "@/lib/store";
 import styles from "./unlock.module.css";
 
 export default function Unlock() {
   const [state] = useDemo();
   const m = meetingOf(state);
-  const allFree = bestCell(state).free >= m.people;
-  const unlockEach = splitCost(0, PRICES.unlockCents, m.people).unlockEachCents;
 
   if (state.pass || state.unlocked) {
     return (
@@ -21,11 +19,11 @@ export default function Unlock() {
         <h1 className={s.title}>Big plan unlocked</h1>
         <p className={s.lede}>
           {state.pass ? "Included in your Crew Pass." : `Unlocked for ${formatPrice(PRICES.unlockCents)}.`} Budget
-          match, who&rsquo;s in, the cost split and reminders are on.
+          match, who&rsquo;s in and weekend dates are on.
         </p>
         <div className={s.actions}>
-          <Link href="/room/ideas" className={s.primary}>
-            See the ideas
+          <Link href={AFTER_UNLOCK} className={s.primary}>
+            Continue
           </Link>
         </div>
       </div>
@@ -47,12 +45,12 @@ export default function Unlock() {
 
       <section className={s.cardInk} aria-labelledby="found">
         <p id="found" className={styles.found}>
-          Hangout found {allFree ? "a time all" : "the best time for"} {m.people} of you
-          {allFree ? " can make" : ""}, and AI-planned ideas that fit the group.
+          Hangout will find the time that works for all {m.people} of you in {m.city}, and plan ideas that fit the
+          group.
         </p>
         <p className={styles.locked}>
           <Icon name="lock" size={16} />
-          Unlock to see them
+          Unlock to start planning
         </p>
       </section>
 
@@ -71,13 +69,13 @@ export default function Unlock() {
       </section>
 
       <p className={s.small}>
-        {formatPrice(PRICES.unlockCents)} once. It goes into the cost split, so about {formatCents(unlockEach)} each.
+        {formatPrice(PRICES.unlockCents)} once, paid by the organizer.
         If the plan doesn&rsquo;t happen, it carries over to your next one.
       </p>
 
       <div className={s.actions}>
         <Link href="/room/unlock/pay" className={s.primary}>
-          Unlock this plan – {formatPrice(PRICES.unlockCents)}
+          Unlock and continue – {formatPrice(PRICES.unlockCents)}
         </Link>
         <Link href="/plans" className={s.textLink} onClick={() => update({ returnTo: "/room/unlock" })}>
           Plan big often? See Crew Pass

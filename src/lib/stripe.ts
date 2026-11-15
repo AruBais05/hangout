@@ -24,7 +24,7 @@ export function getStripe(): Stripe | null {
 export const taxOn = () => process.env.STRIPE_AUTOMATIC_TAX === "true";
 
 export type CheckoutItem = "unlock" | "pass";
-export type PassPlan = "monthly" | "yearly";
+export type PassPlan = "yearly"; // Crew Pass is yearly only
 
 /** What Stripe charges, built from the same config the screens use. */
 export function lineItem(item: CheckoutItem, plan: PassPlan): Stripe.Checkout.SessionCreateParams.LineItem {
@@ -42,9 +42,9 @@ export function lineItem(item: CheckoutItem, plan: PassPlan): Stripe.Checkout.Se
     quantity: 1,
     price_data: {
       currency: "usd",
-      unit_amount: plan === "yearly" ? PRICES.passYearlyCents : PRICES.passMonthlyCents,
-      recurring: { interval: plan === "yearly" ? "year" : "month" },
-      product_data: { name: `Crew Pass (${plan})`, description: "Unlimited big plans and full group history" },
+      unit_amount: PRICES.passYearlyCents,
+      recurring: { interval: "year" },
+      product_data: { name: `Crew Pass (${plan})`, description: "5 vote options, unlimited big plans, cost split and history" },
     },
   };
 }

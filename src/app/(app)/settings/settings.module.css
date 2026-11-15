@@ -72,3 +72,30 @@
 .segment button[aria-checked="true"] {
   background: var(--yellow);
 }
+
+.venmo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--white);
+  font-weight: 700;
+}
+
+.venmo input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-weight: 500;
+  background: transparent;
+}
+
+.venmo:focus-within {
+  outline: 3px solid var(--ink);
+  outline-offset: 1px;
+}

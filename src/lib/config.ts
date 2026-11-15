@@ -3,13 +3,11 @@
 /* ---------- money ---------- */
 
 export const PRICES = {
-  unlockCents: 499, // Big Plan unlock, once per plan, paid by the organizer
-  passYearlyCents: 3999, // Crew Pass, yearly
-  passMonthlyCents: 599, // Crew Pass, monthly
-  bookingFeeCents: 200, // per person, on each booked hangout
+  unlockCents: 499, // Big Plan unlock, once per big plan, for users without Crew Pass
+  passYearlyCents: 3999, // Crew Pass, yearly only
   partnerDiscountPct: 10, // off the share at partner venues
-  passFreeBookings: 4, // fee-free bookings a month for a Crew Pass holder
 };
+// Planning, voting, booking links and settle-up are free. There is no booking fee.
 
 /** A plan is "big" if any of these is true. */
 export const BIG_PLAN = {
@@ -22,7 +20,7 @@ export const DEMO_CARD = "4242 4242 4242 4242";
 export const STREAK_LABEL = "3 months in a row";
 export const ROOM_CODE = "HX7-K2Q";
 export const MAX_DAYS = 10; // longest date range you can pick
-export const PEOPLE = { min: 2, max: 12 };
+export const PEOPLE = { min: 2, max: 50 }; // a hangout is full at 50
 
 /* ---------- AI ---------- */
 
@@ -257,15 +255,16 @@ export type Partner = {
   lng: number;
   partner: true;
   demo: true; // demo data until real partner deals are signed
+  bookingUrl: string | null; // the venue's own site, checked by hand; null if we couldn't confirm it
 };
 
 /** Partner venues per city (lower-case "city, st"). Demo data: not confirmed partners yet. */
 export const PARTNERS: Record<string, Partner[]> = {
   "austin, tx": [
-    { name: "Austin Bouldering Project", neighborhood: "East Austin", category: "climbing gym, gear included", eachCents: 3800, lat: 30.2603, lng: -97.6965, partner: true, demo: true },
-    { name: "Mozart's Coffee Roasters", neighborhood: "Lake Austin", category: "lakeside coffee and dessert", eachCents: 1500, lat: 30.2953, lng: -97.7846, partner: true, demo: true },
-    { name: "ColdTowne Theater", neighborhood: "North Loop", category: "improv comedy show", eachCents: 2000, lat: 30.3176, lng: -97.7182, partner: true, demo: true },
-    { name: "Kung Fu Saloon", neighborhood: "Rainey Street", category: "bar with arcade games", eachCents: 3000, lat: 30.2587, lng: -97.7389, partner: true, demo: true },
+    { name: "Austin Bouldering Project", neighborhood: "East Austin", category: "climbing gym, gear included", eachCents: 3800, lat: 30.2603, lng: -97.6965, partner: true, demo: true, bookingUrl: "https://boulderingproject.com/market/austin-texas/" },
+    { name: "Mozart's Coffee Roasters", neighborhood: "Lake Austin", category: "lakeside coffee and dessert", eachCents: 1500, lat: 30.2953, lng: -97.7846, partner: true, demo: true, bookingUrl: "https://mozartscoffee.com/" },
+    { name: "ColdTowne Theater", neighborhood: "North Loop", category: "improv comedy show", eachCents: 2000, lat: 30.3176, lng: -97.7182, partner: true, demo: true, bookingUrl: "https://coldtownetheater.com/" },
+    { name: "Kung Fu Saloon", neighborhood: "Rainey Street", category: "bar with arcade games", eachCents: 3000, lat: 30.2587, lng: -97.7389, partner: true, demo: true, bookingUrl: null },
   ],
 };
 
@@ -434,21 +433,39 @@ export const NEXT_PROPOSAL = {
 export const PLAN_FEATURES = {
   everyday: [
     "Dates, budget and vibe matching",
-    "Three AI-planned ideas and a group vote",
-    "The plan on everyone's calendar",
-    "A recap after",
+    "3 AI-planned ideas and a group vote",
+    "Booking links and the plan on everyone's calendar",
+    "Settle up with Venmo links",
   ],
   unlock: [
     "Private budget match: nobody says a number out loud",
     "Who's really in: a yes-or-no deadline before anyone books",
     "Dates across a whole weekend",
-    "Cost split with settle-up links",
-    "Reminders to people who haven't answered",
+    "Groups of 6 to 50 people",
   ],
   pass: [
-    "No $2 booking fee on 4 hangouts a month",
     "5 ideas to vote on instead of 3",
-    "Unlimited big plans",
+    "Unlimited big plans, no unlock",
+    "Cost split: add expenses, see who owes whom",
+    "My spending: what you spend on hangouts, private to you",
     "Full group history",
   ],
 };
+
+/* ---------- demo data for big groups and spending ---------- */
+
+/** First names for demo friends beyond the 11 above (big groups go up to 50). */
+export const EXTRA_NAMES = [
+  "Ali", "Dana", "Theo", "Mia", "Kai", "Lena", "Noah", "Ruby", "Eli", "Ava", "Sol", "June", "Max", "Isla", "Remy",
+  "Nora", "Finn", "Cleo", "Jude", "Tess", "Ezra", "Lila", "Owen", "Rosa", "Hugo", "Iris", "Milo", "Vera", "Axel",
+  "Zara", "Cole", "Ines", "Luca", "Maeve", "Arlo", "Nina", "Felix", "Ada",
+];
+
+/** Your past hangout spending (cents per month), so the My spending chart isn't empty. Demo data. */
+export const SPENDING_HISTORY: { month: string; cents: number; hangouts: number }[] = [
+  { month: "2026-06", cents: 4200, hangouts: 2 },
+  { month: "2026-07", cents: 7850, hangouts: 3 },
+  { month: "2026-08", cents: 3100, hangouts: 1 },
+  { month: "2026-09", cents: 6400, hangouts: 2 },
+  { month: "2026-10", cents: 5520, hangouts: 2 },
+];

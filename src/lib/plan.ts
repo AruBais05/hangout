@@ -2,6 +2,7 @@ import {
   BIG_PLAN,
   CREW_POOL,
   DEFAULT_CITY,
+  EXTRA_NAMES,
   DEFAULT_MEETING,
   DEMO_QUIZ,
   MOCK_SCHEDULE,
@@ -71,13 +72,40 @@ export function purposeOf(m: Meeting) {
   return PURPOSES.find((p) => p.id === m.purpose)!;
 }
 
+const TYPES = ["explorer", "nightowl", "planner", "homebody"] as const;
+const BUDGETS = ["25to50", "50to100", "flex", "25to50"] as const;
+
+/** Demo friends: the 11 named ones, then generated ones for big groups (up to 49 friends + you). */
 export function crewOf(m: Meeting): Member[] {
-  return CREW_POOL.slice(0, Math.max(0, m.people - 1));
+  const n = Math.max(0, m.people - 1);
+  const extra: Member[] = [];
+  for (let i = CREW_POOL.length; i < n; i++) {
+    const k = i - CREW_POOL.length;
+    const angle = (k * 137.5 * Math.PI) / 180; // spread around the center
+    const r = 0.02 + (k % 7) * 0.012;
+    extra.push({
+      id: `extra-${k}`,
+      name: EXTRA_NAMES[k % EXTRA_NAMES.length],
+      type: TYPES[k % 4],
+      budget: BUDGETS[k % 4],
+      offset: [Number((Math.sin(angle) * r).toFixed(3)), Number((Math.cos(angle) * r).toFixed(3))],
+      travel: 30,
+    });
+  }
+  return [...CREW_POOL, ...extra].slice(0, n);
 }
 
 export function isBig(m: Meeting): boolean {
   return purposeOf(m).days >= BIG_PLAN.minDays || m.people >= BIG_PLAN.minPeople;
 }
+
+/** A big plan must be paid for (unlock or Crew Pass) before any planning happens. */
+export function needsUnlock(s: DemoState): boolean {
+  return !!s.meeting && isBig(s.meeting) && !s.unlocked && !s.pass;
+}
+
+/** Where a big plan continues once it's unlocked. */
+export const AFTER_UNLOCK = "/start/people";
 
 export function bigReasons(m: Meeting): string[] {
   const r: string[] = [];
@@ -334,31 +362,17 @@ export function winnerOf(s: DemoState, ideas: RankedIdea[]): RankedIdea {
   return ideas.reduce((a, b) => (t[b.id] > t[a.id] ? b : a), ideas[0]);
 }
 
-/* ---------- pay my share ---------- */
+/* ---------- settle up ---------- */
 
 export const thisMonth = () => new Date().toISOString().slice(0, 7);
 
-export function passBookingsUsed(s: DemoState): number {
-  // Read the clock only when there's a count to check (never during the server prerender).
-  if (!s.passBookings.used) return 0;
-  return s.passBookings.month === thisMonth() ? s.passBookings.used : 0;
-}
+export type ShareBreakdown = { shareCents: number; discountCents: number; totalCents: number };
 
-export type ShareBreakdown = {
-  shareCents: number;
-  discountCents: number;
-  feeCents: number;
-  totalCents: number;
-  passCovers: boolean;
-};
-
-/** All money math in cents, from the config rules. */
-export function shareBreakdown(s: DemoState, idea: Pick<PlanCard, "eachCents" | "partnerName">): ShareBreakdown {
+/** Your share of the chosen plan, in cents. Partner venues take 10% off. No fees. */
+export function shareBreakdown(idea: Pick<PlanCard, "eachCents" | "partnerName">): ShareBreakdown {
   const shareCents = idea.eachCents;
   const discountCents = idea.partnerName ? Math.round((shareCents * PRICES.partnerDiscountPct) / 100) : 0;
-  const passCovers = !!s.pass && passBookingsUsed(s) < PRICES.passFreeBookings;
-  const feeCents = shareCents === 0 || passCovers ? 0 : PRICES.bookingFeeCents;
-  return { shareCents, discountCents, feeCents, totalCents: shareCents - discountCents + feeCents, passCovers };
+  return { shareCents, discountCents, totalCents: shareCents - discountCents };
 }
 
 /* ---------- calendar export ---------- */

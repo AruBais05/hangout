@@ -11,17 +11,22 @@ Website and clickable demo for Hangout: turn "we should hang out" into a plan.
    map (tap, drag, search or "Use my location", plus travel time), budget, deal-breakers and the
    group's 5 personality questions. The host's pin sets the group's city; the demo crew moves with it.
 4. `/room/ideas`: 3 plans (5 with Crew Pass) written live by AI from what the group entered.
-   Sample plans if the AI is off, slow (8 s) or wrong. Then vote, pay my share, the plan, the day, recap.
+   Sample plans if the AI is off, slow (8 s) or wrong. Then vote, settle up, the plan, the day, recap.
 
 ## Business model
 
-- Everyday planning: $0. **Booking fee**: $2.00 per person per booked hangout.
-- **Partner venues**: 10% off the share. **Crew Pass** ($5.99/month or $39.99/year): no booking fee
-  on 4 hangouts a month, 5 vote options, unlimited big plans, full history.
-- **Big Plan unlock**: $4.99 once per plan (trips, 6+ people).
+- **Free for everyone:** planning, voting, booking links and settle-up. No booking fee anywhere.
+  Max 50 people per hangout.
+- **Big Plan unlock:** $4.99 once per big plan (trips, or 6+ people) for users without Crew Pass.
+  Big plans pay first, before any planning.
+- **Crew Pass:** $39.99/year (Stripe test checkout). 5 vote options instead of 3, unlimited big plans,
+  cost split with who-owes-whom and Venmo buttons, private "My spending" chart, full history.
+- **Partner venues:** 10% off the share (partners are demo data until confirmed).
+- **Settle up:** the host adds a Venmo username; friends get a "Pay @handle on Venmo" link and "I paid".
+  Hangout never holds money.
 
 All prices, rules, AI settings, partners, sample plans, quizzes and the demo crew live in
-`src/lib/config.ts`. Money is integer cents. Partner venues are demo data until confirmed.
+`src/lib/config.ts`. Money is integer cents.
 
 ## AI
 

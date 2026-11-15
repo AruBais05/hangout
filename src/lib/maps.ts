@@ -22,3 +22,4 @@ export function eventsSearchUrl(city: string, date: string): string {
 export function embedUrl(key: string, t: MapTarget): string {
   return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${encodeURIComponent(query(t))}`;
 }
+

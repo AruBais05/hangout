@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     return Response.json({
       paid: session.payment_status === "paid" || session.payment_status === "no_payment_required",
       item: session.metadata?.item === "pass" ? "pass" : "unlock",
-      plan: session.metadata?.plan === "monthly" ? "monthly" : "yearly",
+      plan: "yearly",
       amountCents: session.amount_total,
       taxCents: session.total_details?.amount_tax ?? 0,
     });

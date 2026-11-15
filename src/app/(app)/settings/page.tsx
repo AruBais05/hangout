@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import MySpending from "@/components/MySpending";
 import s from "@/components/demo/screen.module.css";
 import { PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
-import { resetDemo, setPass, useDemo } from "@/lib/store";
+import { cleanHandle } from "@/lib/split";
+import { resetDemo, setPass, update, useDemo } from "@/lib/store";
 import styles from "./settings.module.css";
 
-function nextCharge(startedAt: string, plan: "monthly" | "yearly"): string {
+function nextCharge(startedAt: string): string {
   const d = new Date(startedAt);
-  if (plan === "monthly") d.setMonth(d.getMonth() + 1);
-  else d.setFullYear(d.getFullYear() + 1);
+  d.setFullYear(d.getFullYear() + 1);
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
@@ -34,19 +35,15 @@ export default function Settings() {
             <dl className={styles.rows}>
               <div>
                 <dt>Plan</dt>
-                <dd>{pass.plan === "yearly" ? "Yearly" : "Monthly"}</dd>
+                <dd>Yearly</dd>
               </div>
               <div>
                 <dt>Price</dt>
-                <dd className={s.money}>
-                  {pass.plan === "yearly"
-                    ? `${formatPrice(PRICES.passYearlyCents)} a year`
-                    : `${formatPrice(PRICES.passMonthlyCents)} a month`}
-                </dd>
+                <dd className={s.money}>{formatPrice(PRICES.passYearlyCents)} a year</dd>
               </div>
               <div>
                 <dt>Next charge</dt>
-                <dd>{nextCharge(pass.startedAt, pass.plan)}</dd>
+                <dd>{nextCharge(pass.startedAt)}</dd>
               </div>
             </dl>
             {confirming ? (
@@ -84,6 +81,26 @@ export default function Settings() {
           </>
         )}
       </section>
+
+      <section className={s.cardLine} aria-labelledby="venmo-title">
+        <h2 id="venmo-title" className={s.label}>
+          Your Venmo
+        </h2>
+        <label className={styles.venmo}>
+          <span className="visually-hidden">Venmo username</span>
+          <span aria-hidden="true">@</span>
+          <input
+            value={state.venmoHandle}
+            maxLength={30}
+            placeholder="username"
+            autoComplete="off"
+            onChange={(e) => update({ venmoHandle: cleanHandle(e.target.value) })}
+          />
+        </label>
+        <p className={s.small}>Friends get a button to pay you back on Venmo. Optional.</p>
+      </section>
+
+      <MySpending />
 
       <section className={s.card} aria-labelledby="demo-title">
         <h2 id="demo-title" className={s.label}>

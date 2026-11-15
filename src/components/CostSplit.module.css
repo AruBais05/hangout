@@ -1,0 +1,99 @@
+.split,
+.locked {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.split h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.form > button,
+.error {
+  grid-column: 1 / -1;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.field input,
+.field select {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--white);
+  font: inherit;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.list,
+.debts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.list li,
+.debts li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  background: var(--white);
+  font-size: 0.95rem;
+}
+
+.done {
+  opacity: 0.6;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--white);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.small[aria-pressed="true"] {
+  background: var(--yellow);
+}

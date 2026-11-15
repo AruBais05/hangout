@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import CityField from "@/components/CityField";
+import { cleanHandle } from "@/lib/split";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { DEFAULT_MEETING, DEMO_QUIZ, MAX_DAYS, PEOPLE, PRICES, PURPOSES, type GroupQuiz, type PurposeId, type Vibe } from "@/lib/config";
@@ -20,6 +21,8 @@ export default function Start() {
   const [to, setTo] = useState(DEFAULT_MEETING.to);
   const [people, setPeople] = useState(DEFAULT_MEETING.people);
   const [name, setName] = useState("");
+  const [venmo, setVenmo] = useState<string | null>(null);
+  const venmoValue = venmo ?? state.venmoHandle;
 
   const span = from && to ? days(from, to).length : 0;
   const dateError = !from || !to
@@ -42,7 +45,7 @@ export default function Start() {
     // The demo quiz is ready at once, so nobody waits. The AI writes this group's quiz in the
     // background, once; everyone who joins gets the same questions.
     const demo: GroupQuiz = { source: "demo", questions: DEMO_QUIZ };
-    newMeeting(meeting, demo);
+    newMeeting(meeting, demo, cleanHandle(venmoValue));
     fetch("/api/quiz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,7 +56,8 @@ export default function Start() {
         if (q?.questions?.length) update((st) => (st.joined ? {} : { groupQuiz: q }));
       })
       .catch(() => {});
-    router.push("/start/people");
+    // Big plans pay first (unlock or Crew Pass), then set up the crew.
+    router.push(isBig(meeting) && !state.pass ? "/room/unlock" : "/start/people");
   }
 
   return (
@@ -165,6 +169,18 @@ export default function Start() {
         />
       </label>
 
+      <label className={styles.field}>
+        <span>Your Venmo (optional)</span>
+        <input
+          type="text"
+          value={venmoValue}
+          maxLength={31}
+          placeholder="@username, so friends can pay you back"
+          autoComplete="off"
+          onChange={(e) => setVenmo(e.target.value)}
+        />
+      </label>
+
       <p className={big ? styles.noteBig : styles.noteFree} aria-live="polite">
         <Icon name={big ? "star" : "check"} size={18} />
         <span>
@@ -175,7 +191,7 @@ export default function Start() {
             </>
           ) : (
             <>
-              <strong>Everyday plan: free.</strong> No payment, ever.
+              <strong>Everyday plan: free.</strong> No fees.
             </>
           )}
         </span>
@@ -183,7 +199,7 @@ export default function Start() {
 
       <div className={s.actions}>
         <button type="button" className={s.primary} onClick={next} disabled={!!dateError}>
-          Next
+          {big && !state.pass ? `Next: unlock for ${formatPrice(PRICES.unlockCents)}` : "Next"}
         </button>
       </div>
     </div>

@@ -61,7 +61,8 @@ export default function Room() {
   useEffect(() => {
     if (!active) return;
     const t = setInterval(() => {
-      update((st) => ({ crewJoined: Math.min(st.crewJoined + 1, crew.length) }));
+      const step = Math.max(1, Math.ceil(crew.length / 10)); // big groups join in batches
+      update((st) => ({ crewJoined: Math.min(st.crewJoined + step, crew.length) }));
     }, 650);
     return () => clearInterval(t);
   }, [active, crew.length]);

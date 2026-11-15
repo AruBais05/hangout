@@ -1,0 +1,96 @@
+.private {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.blur {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+
+.statLabel {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.statValue {
+  font-weight: 900;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.chart {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px; /* surface gap between bars */
+  height: 160px;
+  border-bottom: 1px solid var(--line); /* recessive baseline */
+}
+
+.col {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+  outline: none;
+}
+
+.col:focus-visible .bar {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.barWrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bar {
+  width: 60%;
+  max-width: 28px;
+  border-radius: 4px 4px 0 0; /* rounded data end, square on the baseline */
+  background: var(--orange);
+}
+
+.col:hover .bar,
+.col:focus .bar {
+  background: var(--orange-hover);
+}
+
+.month {
+  padding-top: 6px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.tip {
+  position: absolute;
+  bottom: calc(100% - 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 0.78rem;
+  font-weight: 700;
+  z-index: 1;
+}

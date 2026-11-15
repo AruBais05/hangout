@@ -66,7 +66,7 @@ export default function CheckoutReturn() {
   }
 
   const unlock = result.item === "unlock";
-  const next = unlock ? "/room/ideas" : (state.returnTo ?? "/room/recap");
+  const next = unlock ? "/start/people" : (state.returnTo ?? "/room/recap");
   return (
     <div className={s.screen}>
       <div className={styles.success} role="status">
@@ -76,8 +76,8 @@ export default function CheckoutReturn() {
         <h1 className={s.title}>{unlock ? "Plan unlocked" : "Crew Pass is on"}</h1>
         <p className={s.lede}>
           {unlock
-            ? "Budget match, who's in, the cost split and reminders are on for this plan."
-            : "Unlimited big plans, the next hangout proposed for you, and your full group history."}
+            ? "Budget match, who's in and weekend dates are on for this plan."
+            : "5 vote options, unlimited big plans, cost split, your spending and full history."}
         </p>
         {result.amountCents != null && (
           <p className={s.small}>
@@ -88,7 +88,7 @@ export default function CheckoutReturn() {
       </div>
       <div className={s.actions}>
         <button type="button" className={s.primary} onClick={() => router.push(next)}>
-          {unlock ? "See the ideas" : "Continue"}
+          Continue
         </button>
       </div>
     </div>

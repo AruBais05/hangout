@@ -85,9 +85,11 @@ export default function CityField({ value, onChange }: { value: string; onChange
           ))}
         </ul>
       )}
-      <p className={s.small} aria-live="polite">
-        {msg || "Your friends, the quiz and the AI plans all move to this city."}
-      </p>
+      {msg && (
+        <p className={s.small} aria-live="polite">
+          {msg}
+        </p>
+      )}
       <button type="button" className={s.textLink} onClick={() => setEditing(false)}>
         Keep {value}
       </button>

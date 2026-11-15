@@ -8,6 +8,7 @@ const HOUR = 60 * 60 * 1000;
 
 type TmEvent = {
   name?: string;
+  url?: string;
   dates?: { start?: { localDate?: string; localTime?: string } };
   priceRanges?: { min?: number }[];
   _embedded?: { venues?: { name?: string }[] };
@@ -60,6 +61,7 @@ export async function eventsFor(input: SuggestInput): Promise<EventItem[]> {
         venue: e._embedded?.venues?.[0]?.name?.slice(0, 80) ?? "",
         startTime: formatClock(minutes),
         minPriceUsd: mins.length ? Math.min(...mins) : null,
+        url: e.url && /^https:\/\/([a-z0-9-]+\.)*(ticketmaster|livenation)\.com\//i.test(e.url) ? e.url : null,
       });
       if (events.length >= 10) break;
     }

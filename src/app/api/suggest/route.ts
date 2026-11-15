@@ -200,6 +200,7 @@ export async function POST(request: NextRequest) {
         searchHint: p.search_hint,
         partnerName: partner?.name ?? null,
         eventName: event?.name ?? null,
+        bookingUrl: event?.url ?? null,
       });
       if (valid.length === count) break;
     }

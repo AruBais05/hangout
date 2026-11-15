@@ -23,6 +23,7 @@ export type PlanCard = {
   searchHint: string;
   partnerName: string | null;
   eventName: string | null;
+  bookingUrl: string | null; // ticket page, only for real events from Ticketmaster
 };
 
 export type SuggestMember = {
@@ -43,7 +44,7 @@ export type SuggestInput = {
   members: SuggestMember[];
 };
 
-export type EventItem = { name: string; venue: string; startTime: string; minPriceUsd: number | null };
+export type EventItem = { name: string; venue: string; startTime: string; minPriceUsd: number | null; url: string | null };
 
 export type SuggestResult = {
   source: "ai" | "sample" | "cache";
@@ -137,6 +138,7 @@ function toCard(p: SamplePlan, input: SuggestInput, i: number): PlanCard {
     searchHint: fill(p.searchHint),
     partnerName: p.partnerName,
     eventName: null,
+    bookingUrl: null,
   };
 }
 

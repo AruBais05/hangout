@@ -100,7 +100,7 @@ export default function Home() {
               Everyday
             </h3>
             <p className={styles.price}>$0</p>
-            <p className={styles.priceNote}>Nobody pays, ever</p>
+            <p className={styles.priceNote}>Planning, voting and booking links. No fees, ever.</p>
             <ul className={styles.features}>
               {PLAN_FEATURES.everyday.map((f) => (
                 <li key={f}>{f}</li>
@@ -115,7 +115,7 @@ export default function Home() {
             <p className={styles.price}>
               {formatPrice(PRICES.unlockCents)} <span className={styles.per}>once per plan</span>
             </p>
-            <p className={styles.priceNote}>The organizer pays. It goes into the split: about $1 each.</p>
+            <p className={styles.priceNote}>For trips and groups of 6 to 50. Free with Crew Pass.</p>
             <ul className={styles.features}>
               {PLAN_FEATURES.unlock.map((f) => (
                 <li key={f}>{f}</li>
@@ -130,7 +130,7 @@ export default function Home() {
             <p className={styles.price}>
               {formatPrice(PRICES.passYearlyCents)} <span className={styles.per}>a year</span>
             </p>
-            <p className={styles.priceNote}>or {formatPrice(PRICES.passMonthlyCents)} a month, for groups that plan big often</p>
+            <p className={styles.priceNote}>Yearly, for groups that hang out often</p>
             <ul className={styles.features}>
               {PLAN_FEATURES.pass.map((f) => (
                 <li key={f}>{f}</li>
@@ -141,15 +141,14 @@ export default function Home() {
 
         <div className={styles.promises}>
           <p>
-            <strong>A big plan</strong> is more than one day, {BIG_PLAN.minPeople}+ people, or over{" "}
-            {formatPrice(BIG_PLAN.budgetOverCents)} a person.
+            <strong>A big plan</strong> is a trip (more than one day) or {BIG_PLAN.minPeople} to 50 people.
           </p>
           <p>
             <strong>If it doesn&rsquo;t happen,</strong> the unlock carries over to your next plan.
           </p>
           <p>
-            <strong>We never hold your money.</strong> You pay venues directly. Partners pay us a small
-            commission, never you.
+            <strong>We never hold your money.</strong> Friends settle up with each other, on Venmo or however
+            you like. Partner venues give you 10% off.
           </p>
         </div>
       </section>

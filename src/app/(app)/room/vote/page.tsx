@@ -93,7 +93,7 @@ export default function Vote() {
       <div className={s.actions}>
         {ended ? (
           <Link href={next} className={s.primary}>
-            {isBig(m) ? "Ask who's really in" : "Lock it and pay my share"}
+            {isBig(m) ? "Ask who's really in" : "Lock the plan"}
           </Link>
         ) : (
           <button type="button" className={s.primary} onClick={() => update({ votingEnded: true })}>

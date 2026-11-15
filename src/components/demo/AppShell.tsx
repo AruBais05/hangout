@@ -3,20 +3,21 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
-import { isBig, meetingOf } from "@/lib/plan";
+import { useEffect } from "react";
+import { isBig, meetingOf, needsUnlock } from "@/lib/plan";
 import { setPass, useDemo } from "@/lib/store";
 import styles from "./AppShell.module.css";
 
 const ALL_STEPS = [
   { path: "/start", label: "Set up" },
+  { path: "/room/unlock", label: "Big plan", big: true },
   { path: "/start/people", label: "Your crew" },
   { path: "/room", label: "Waiting room" },
   { path: "/room/join", label: "Your answers" },
-  { path: "/room/unlock", label: "Big plan", big: true },
   { path: "/room/ideas", label: "Ideas" },
   { path: "/room/vote", label: "Vote" },
   { path: "/room/in", label: "Who's in", big: true },
-  { path: "/room/pay", label: "Pay my share" },
+  { path: "/room/pay", label: "Settle up" },
   { path: "/room/plan", label: "The plan" },
   { path: "/room/night", label: "On the day" },
   { path: "/room/recap", label: "Recap" },
@@ -30,6 +31,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const steps = ALL_STEPS.filter((s) => !s.big || big);
   const index = steps.findIndex((s) => s.path === pathname);
   const hasPass = !!state.pass;
+
+  // Big plans pay first: every planning page after setup sends you to the unlock until it's paid.
+  const locked =
+    ready &&
+    needsUnlock(state) &&
+    (pathname === "/start/people" || (pathname.startsWith("/room") && !pathname.startsWith("/room/unlock")));
+  useEffect(() => {
+    if (locked) router.replace("/room/unlock");
+  }, [locked, router]);
 
   return (
     <div className={styles.page}>
@@ -86,7 +96,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Saved demo state loads after hydration; keep the screen invisible until then. */}
       <main id="main" className={`${styles.main} ${ready ? "" : styles.loading}`} aria-busy={!ready}>
-        {children}
+        {locked ? null : children}
       </main>
     </div>
   );

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import LocationPicker, { type Picked } from "@/components/LocationPicker";
-import { BUDGET_RANGES, DEAL_BREAKERS, PERSONALITIES, SLOTS, SLOT_HOURS, TRAVEL_MINUTES, type QuizQuestion, type TravelMinutes } from "@/lib/config";
+import { BUDGET_RANGES, DEAL_BREAKERS, PEOPLE, PERSONALITIES, SLOTS, SLOT_HOURS, TRAVEL_MINUTES, type QuizQuestion, type TravelMinutes } from "@/lib/config";
 import { calendarBusy, cellKey, dayLabel, days, meetingOf, personalityOf, purposeOf, quizOf } from "@/lib/plan";
 import { update, useDemo, type CellState, type Me } from "@/lib/store";
 import s from "./screen.module.css";
@@ -19,8 +19,27 @@ type Step = { kind: "times" } | { kind: "fixed"; id: Fixed } | { kind: "q"; i: n
 
 /** Waits for saved demo state, so a returning user's answers are filled in. */
 export default function JoinFlow({ guest = false }: { guest?: boolean }) {
-  const [, ready] = useDemo();
-  return ready ? <Flow guest={guest} /> : <div className={s.screen} aria-busy="true" />;
+  const [state, ready] = useDemo();
+  if (!ready) return <div className={s.screen} aria-busy="true" />;
+  // An invite can't add a 51st person, or anyone once every seat is taken.
+  const m = meetingOf(state);
+  const taken = state.crewJoined + (state.joined ? 1 : 0);
+  if (guest && state.meeting && taken >= Math.min(m.people, PEOPLE.max)) {
+    return (
+      <div className={s.screen}>
+        <h1 className={s.title}>This hangout is full</h1>
+        <p className={s.lede}>
+          All {m.people} seats are taken. Ask the host to start a new hangout{m.people >= PEOPLE.max ? ` (max ${PEOPLE.max} people)` : ""}.
+        </p>
+        <div className={s.actions}>
+          <Link href="/" className={s.primary}>
+            Back to Hangout
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <Flow guest={guest} />;
 }
 
 function Flow({ guest }: { guest: boolean }) {
@@ -259,7 +278,7 @@ function Flow({ guest }: { guest: boolean }) {
         <div>
           <h1 className={s.title}>Where are you coming from?</h1>
           <p className={s.lede} style={{ marginTop: 8 }}>
-            {guest ? "Your rough area helps pick a place that's fair for everyone." : "Your pin also sets the group's city."}
+            Your rough area helps pick a place that&rsquo;s fair for everyone.
           </p>
         </div>
         <LocationPicker center={city.center} city={city.name} value={me.point} onPick={picked} />

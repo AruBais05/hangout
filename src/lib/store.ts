@@ -6,7 +6,7 @@ import type { SuggestResult } from "./suggest";
 
 // Guest-only demo state, kept in localStorage. No accounts, no money held.
 
-export type PassPlan = "monthly" | "yearly";
+export type PassPlan = "yearly";
 export type CellState = "free" | "busy";
 
 export type Meeting = {
@@ -49,14 +49,19 @@ export type DemoState = {
   checkedIn: boolean;
   returnTo: string | null;
   suggest: { key: string; result: SuggestResult } | null; // the plans on the voting screen
-  paid: { feeCents: number; totalCents: number } | null; // what you paid for your share
-  passBookings: { month: string; used: number }; // fee-free bookings used this month
+  paid: boolean; // you tapped "I paid" for your share
+  venmoHandle: string; // the host's Venmo username, for settle-up links
+  expenses: Expense[]; // Crew Pass cost split
+  settled: string[]; // "from>to" debts marked as paid
+  spentThisMonth: number; // cents you paid this month (shares + expenses), for My spending
   crewAreas: Record<string, string>; // "city|memberId" → neighborhood name
 };
 
+export type Expense = { id: string; payer: string; what: string; amountCents: number; handle: string };
+
 export const EMPTY_ME: Me = { name: "", point: null, area: "", travel: 30, budget: null, dealBreakers: [] };
 
-const KEY = "hangout-demo-v4";
+const KEY = "hangout-demo-v5";
 
 export const INITIAL: DemoState = {
   meeting: null,
@@ -77,8 +82,11 @@ export const INITIAL: DemoState = {
   checkedIn: false,
   returnTo: null,
   suggest: null,
-  paid: null,
-  passBookings: { month: "", used: 0 },
+  paid: false,
+  venmoHandle: "",
+  expenses: [],
+  settled: [],
+  spentThisMonth: 0,
   crewAreas: {},
 };
 
@@ -112,10 +120,10 @@ export function update(patch: Partial<DemoState> | ((s: DemoState) => Partial<De
   listeners.forEach((l) => l());
 }
 
-/** Starts a new meeting but keeps the Crew Pass, its monthly count and known neighborhoods. */
-export function newMeeting(meeting: Meeting, groupQuiz: GroupQuiz) {
-  const { pass, passBookings, crewAreas } = load();
-  update({ ...INITIAL, pass, passBookings, crewAreas, meeting, groupQuiz });
+/** Starts a new meeting but keeps the Crew Pass, your Venmo, your spending and known neighborhoods. */
+export function newMeeting(meeting: Meeting, groupQuiz: GroupQuiz, venmoHandle?: string) {
+  const { pass, crewAreas, spentThisMonth, venmoHandle: prev } = load();
+  update({ ...INITIAL, pass, crewAreas, spentThisMonth, venmoHandle: venmoHandle ?? prev, meeting, groupQuiz });
 }
 
 export function resetDemo() {

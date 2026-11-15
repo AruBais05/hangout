@@ -12,17 +12,17 @@ export default function Plans() {
   const [state] = useDemo();
 
   const tiers = [
-    { name: "Everyday", price: "$0", note: "Nobody pays, ever", features: PLAN_FEATURES.everyday },
+    { name: "Everyday", price: "$0", note: "Planning, voting and booking links are free. No fees.", features: PLAN_FEATURES.everyday },
     {
       name: "Big Plan unlock",
       price: formatPrice(PRICES.unlockCents),
-      note: "Once per plan. The organizer pays; it goes into the split.",
+      note: "Once per big plan (trips, 6 to 50 people). Free with Crew Pass.",
       features: PLAN_FEATURES.unlock,
     },
     {
       name: "Crew Pass",
       price: `${formatPrice(PRICES.passYearlyCents)}/yr`,
-      note: `or ${formatPrice(PRICES.passMonthlyCents)} a month`,
+      note: "Yearly. For groups that hang out often.",
       features: PLAN_FEATURES.pass,
       highlight: true,
     },

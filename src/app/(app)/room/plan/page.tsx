@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Icon from "@/components/Icon";
+import BookLinks from "@/components/BookLinks";
 import MapLinks from "@/components/MapLinks";
 import PlaceMap, { type MapPin } from "@/components/PlaceMap";
 import s from "@/components/demo/screen.module.css";
@@ -26,7 +27,7 @@ export default function Plan() {
   const m = meetingOf(state);
   const crew = crewOf(m);
   const idea = winnerOf(state, rankIdeas(state));
-  const b = shareBreakdown(state, idea);
+  const b = shareBreakdown(idea);
   const known = placePoint(m, idea);
   const [found, setFound] = useState<{ q: string; point: [number, number] | null } | null>(null);
   const q = `${idea.neighborhood}`;
@@ -82,13 +83,14 @@ export default function Plan() {
           label={`Map: ${idea.place} in ${m.city}, and the middle of the group`}
           embedTarget={{ searchHint: idea.searchHint, city: m.city }}
         />
-        <MapLinks target={{ searchHint: idea.searchHint, city: m.city }} />
+        <BookLinks idea={idea} city={m.city} />
+        <MapLinks target={{ searchHint: idea.searchHint, city: m.city }} open={false} />
       </section>
 
-      {b.shareCents > 0 ? (
+      {b.totalCents > 0 ? (
         <section aria-labelledby="settle-title">
           <h2 id="settle-title" className={styles.settleTitle}>
-            Everyone pays their own share: {formatCents(b.shareCents - b.discountCents)} plus the booking fee.
+            Each share is {formatCents(b.totalCents)}. Everyone pays the host back.
           </h2>
           <ul className={styles.people}>
             <li>
@@ -115,17 +117,16 @@ export default function Plan() {
           </ul>
           {!state.paid && (
             <Link href="/room/pay" className={s.textLink}>
-              Pay my share
+              Settle up
             </Link>
           )}
         </section>
       ) : (
-        <p className={styles.freeNote}>
-          <Icon name="check" size={18} />
-          <span>
-            <strong>Free plan.</strong> Nothing to pay, and no booking fee.
-          </span>
-        </p>
+        <section aria-labelledby="book-title" className={styles.mapSection}>
+          <h2 id="book-title" className={styles.settleTitle}>
+            Free plan. Nothing to pay.
+          </h2>
+        </section>
       )}
 
       {idea.partner && (

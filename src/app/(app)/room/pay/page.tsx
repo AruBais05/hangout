@@ -1,44 +1,32 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import BookLinks from "@/components/BookLinks";
+import CostSplit from "@/components/CostSplit";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import styles from "../plan/plan.module.css";
 import { PRICES } from "@/lib/config";
 import { formatCents } from "@/lib/money";
-import { meetingOf, passBookingsUsed, rankIdeas, shareBreakdown, thisMonth, winnerOf } from "@/lib/plan";
+import { meetingOf, rankIdeas, shareBreakdown, winnerOf } from "@/lib/plan";
+import { venmoUrl } from "@/lib/split";
 import { update, useDemo } from "@/lib/store";
 
-export default function Pay() {
+export default function SettleUp() {
   const router = useRouter();
   const [state] = useDemo();
   const m = meetingOf(state);
   const idea = winnerOf(state, rankIdeas(state));
-  const b = shareBreakdown(state, idea);
-  const used = passBookingsUsed(state);
-  const [paying, setPaying] = useState(false);
-  const paid = state.paid;
-  // Once paid, show what was actually charged, even if the Pass count changes later.
-  const feeCents = paid ? paid.feeCents : b.feeCents;
-  const covered = paid ? paid.feeCents === 0 : b.passCovers;
+  const b = shareBreakdown(idea);
+  const handle = state.venmoHandle;
 
-  function pay() {
-    setPaying(true);
-    // Demo payment: nothing leaves the browser.
-    setTimeout(() => {
-      update((st) => ({
-        paid: { feeCents: b.feeCents, totalCents: b.totalCents },
-        passBookings: b.passCovers ? { month: thisMonth(), used: used + 1 } : st.passBookings,
-      }));
-      setPaying(false);
-    }, 900);
+  function markPaid() {
+    update((st) => ({ paid: true, spentThisMonth: st.spentThisMonth + (st.paid ? 0 : b.totalCents) }));
   }
 
   return (
     <div className={s.screen}>
-      <h1 className={s.title}>{paid ? "Your share is paid" : "Pay my share"}</h1>
+      <h1 className={s.title}>Settle up</h1>
 
       <section className={styles.ticket} aria-labelledby="pay-plan">
         <p className={styles.when}>{idea.whenLabel}</p>
@@ -51,11 +39,13 @@ export default function Pay() {
         </p>
       </section>
 
+      <BookLinks idea={idea} city={m.city} />
+
       {b.shareCents === 0 ? (
         <p className={styles.freeNote}>
           <Icon name="check" size={18} />
           <span>
-            <strong>Nothing to pay.</strong> This plan is free, so there&rsquo;s no booking fee either.
+            <strong>Nothing to pay.</strong> This plan is free.
           </span>
         </p>
       ) : (
@@ -65,7 +55,7 @@ export default function Pay() {
           </h2>
           <dl>
             <div>
-              <dt>Your share</dt>
+              <dt>Per person</dt>
               <dd className={s.money}>{formatCents(b.shareCents)}</dd>
             </div>
             {b.discountCents > 0 && (
@@ -74,56 +64,40 @@ export default function Pay() {
                 <dd className={s.money}>{formatCents(-b.discountCents)}</dd>
               </div>
             )}
-            <div>
-              <dt>Booking fee</dt>
-              <dd className={s.money}>{covered && state.pass ? "$0.00 with Pass" : formatCents(feeCents)}</dd>
-            </div>
             <div className={styles.total}>
-              <dt>Total</dt>
-              <dd className={s.money}>{formatCents(paid?.totalCents ?? b.totalCents)}</dd>
+              <dt>Your share</dt>
+              <dd className={s.money}>{formatCents(b.totalCents)}</dd>
             </div>
           </dl>
           <p className={s.small}>
-            Fee {formatCents(feeCents)}
-            {b.discountCents > 0 ? `, saved ${formatCents(b.discountCents)}` : ""}.
+            {state.paid
+              ? "You marked your share as paid."
+              : handle
+                ? "The host paid the place. Pay them back on Venmo."
+                : "Ask the host how to pay them back."}
           </p>
+          <div className={styles.calButtons}>
+            {handle && !state.paid && (
+              <a className={s.secondary} href={venmoUrl(handle, b.totalCents, idea.title)} target="_blank" rel="noopener noreferrer">
+                Pay @{handle} on Venmo
+                <span className="visually-hidden">(opens in a new tab)</span>
+              </a>
+            )}
+            <button type="button" className={s.secondary} onClick={markPaid} disabled={state.paid} aria-pressed={state.paid}>
+              <Icon name="check" size={18} />
+              {state.paid ? "Paid" : "I paid"}
+            </button>
+          </div>
         </section>
       )}
 
-      {state.pass ? (
-        <p className={s.small} aria-live="polite">
-          <strong>{Math.min(used, PRICES.passFreeBookings)} of {PRICES.passFreeBookings}</strong> fee-free bookings used this
-          month.
-        </p>
-      ) : (
-        b.shareCents > 0 && (
-          <p className={s.small}>
-            Skip the fee with Crew Pass.{" "}
-            <Link href="/plans" className={s.textLink}>
-              See plans
-            </Link>
-          </p>
-        )
-      )}
+      <CostSplit title={idea.title} />
 
       <div className={s.actions}>
-        {paid || b.shareCents === 0 ? (
-          <button type="button" className={s.primary} onClick={() => router.push("/room/plan")}>
-            See the plan
-          </button>
-        ) : (
-          <button type="button" className={s.primary} onClick={pay} disabled={paying}>
-            {paying ? (
-              <>
-                <span className={s.spinner} aria-hidden="true" />
-                Paying…
-              </>
-            ) : (
-              `Pay ${formatCents(b.totalCents)}`
-            )}
-          </button>
-        )}
-        <p className={s.small}>{paid ? `Paid ${formatCents(paid.totalCents)}. Demo payment, no real charge.` : "Demo payment. No real charge."}</p>
+        <button type="button" className={s.primary} onClick={() => router.push("/room/plan")}>
+          See the plan
+        </button>
+        <p className={s.small}>Planning, voting and booking links are free. Hangout never holds your money.</p>
       </div>
     </div>
   );
