@@ -1,0 +1,40 @@
+.hero {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.number {
+  font-weight: 900;
+  font-size: clamp(6rem, 24vw, 10rem);
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  background: var(--yellow);
+  padding: 0 0.12em;
+  border-radius: var(--radius-m);
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  font-weight: 900;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  letter-spacing: -0.03em;
+}
+
+.seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.seats li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 56px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}

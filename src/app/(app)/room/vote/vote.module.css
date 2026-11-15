@@ -1,0 +1,81 @@
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--yellow);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.winLabel {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.winTitle {
+  font-weight: 900;
+  font-size: clamp(1.8rem, 5vw, 2.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 4px 0 6px;
+}
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.result {
+  padding: 14px 16px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  display: grid;
+  gap: 8px;
+}
+
+.won {
+  box-shadow: inset 0 0 0 2px var(--ink);
+  background: var(--white);
+}
+
+.resultTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+}
+
+.resultName {
+  font-weight: 800;
+}
+
+.bar {
+  height: 10px;
+  border-radius: 99px;
+  background: var(--white);
+  overflow: hidden;
+}
+
+.won .bar {
+  background: var(--surface);
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--orange);
+  border-radius: 99px;
+  transition: width 500ms var(--ease-out);
+}

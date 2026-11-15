@@ -1,34 +1,53 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { SlotKey } from "./config";
+import type { PurposeId } from "./config";
 
 // Guest-only demo state, kept in localStorage. No accounts, no money held.
 
 export type PassPlan = "monthly" | "yearly";
+export type CellState = "free" | "busy";
 
-export type DemoState = {
-  pass: { plan: PassPlan; startedAt: string } | null; // Crew Pass
-  unlocked: boolean; // this big plan was unlocked with the one-time $4.99
-  budgetCents: number | null; // private
-  vibe: "active" | "chill" | null;
-  availability: SlotKey[];
-  myVote: string | null;
-  votingEnded: boolean;
-  voteEndsAt: number | null; // epoch ms
-  imIn: boolean;
-  checkedIn: boolean;
-  returnTo: string | null; // where to go after buying the Crew Pass
+export type Meeting = {
+  purpose: PurposeId;
+  from: string; // YYYY-MM-DD
+  to: string;
+  people: number;
+  name: string;
 };
 
-const KEY = "hangout-demo-v2";
+export type DemoState = {
+  meeting: Meeting | null;
+  crewJoined: number; // demo friends who joined the waiting room
+  cells: Record<string, CellState>; // "YYYY-MM-DD|Slot" → state
+  calCells: string[]; // cells filled by the demo calendar (cleared on disconnect)
+  calConnected: boolean;
+  quiz: Record<string, string[]>; // question id → chosen labels
+  budgetCents: number | null; // private
+  joined: boolean; // you finished times + quiz
+  pass: { plan: PassPlan; startedAt: string } | null;
+  unlocked: boolean;
+  myVote: string | null;
+  votingEnded: boolean;
+  voteEndsAt: number | null;
+  imIn: boolean;
+  checkedIn: boolean;
+  returnTo: string | null;
+};
+
+const KEY = "hangout-demo-v3";
 
 export const INITIAL: DemoState = {
+  meeting: null,
+  crewJoined: 0,
+  cells: {},
+  calCells: [],
+  calConnected: false,
+  quiz: {},
+  budgetCents: null,
+  joined: false,
   pass: null,
   unlocked: false,
-  budgetCents: null,
-  vibe: null,
-  availability: [],
   myVote: null,
   votingEnded: false,
   voteEndsAt: null,
@@ -67,10 +86,10 @@ export function update(patch: Partial<DemoState> | ((s: DemoState) => Partial<De
   listeners.forEach((l) => l());
 }
 
-/** Starts a new plan but keeps the Crew Pass. */
-export function restartPlan() {
+/** Starts a new meeting but keeps the Crew Pass. */
+export function newMeeting(meeting: Meeting) {
   const { pass } = load();
-  update({ ...INITIAL, pass });
+  update({ ...INITIAL, pass, meeting });
 }
 
 export function resetDemo() {
@@ -100,9 +119,4 @@ function subscribe(cb: () => void) {
 export function useDemo(): [DemoState, boolean] {
   const s = useSyncExternalStore(subscribe, load, () => null);
   return s ? [s, true] : [INITIAL, false];
-}
-
-/** True when this plan's big-plan features are open (unlocked once, or Crew Pass). */
-export function isOpen(s: DemoState): boolean {
-  return s.unlocked || !!s.pass;
 }

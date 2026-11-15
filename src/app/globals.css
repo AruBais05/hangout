@@ -1,20 +1,21 @@
-/* Hangout brand: the logo's purple and white, plus tints and shades of that purple. */
+/* Hangout: minimal white base, Snapchat-style yellow highlights, bright orange actions. */
 :root {
-  --purple: #4826ec; /* logo purple */
-  --purple-hover: #3a19d4;
-  --purple-ink: #170a4d; /* text on white */
-  --purple-deep: #22107a; /* dark blocks */
-  --purple-mid: #8b74f5; /* decorative only */
-  --purple-soft: #c9bffb;
-  --lilac: #ede9fe; /* tinted surfaces */
-  --lilac-2: #f6f4ff;
+  --yellow: #fffc00; /* highlight surfaces, always with ink text */
+  --yellow-soft: #fffdb8;
+  --orange: #ff6b00; /* buttons and active states, with ink text */
+  --orange-hover: #f25f00;
+  --orange-soft: #ffeedf;
+  --orange-text: #b84a00; /* orange used as text on white, 5:1 */
+  --ink: #1b1a17;
+  --muted: #5f5b52; /* 6.5:1 on white */
+  --surface: #f6f5f1;
+  --line: #e8e6df;
   --white: #ffffff;
-  --muted: #4b4470; /* secondary text, 8:1 on white */
+  --danger: #b0123e;
 
-  --font-display: "Anybody", system-ui, sans-serif;
-  --font-body: "Figtree", system-ui, sans-serif;
+  --font: var(--font-figtree), system-ui, sans-serif;
 
-  --radius-s: 10px;
+  --radius-s: 12px;
   --radius-m: 18px;
   --radius-l: 28px;
 
@@ -35,8 +36,8 @@ html {
 body {
   margin: 0;
   background: var(--white);
-  color: var(--purple-ink);
-  font-family: var(--font-body);
+  color: var(--ink);
+  font-family: var(--font);
   font-size: 1rem;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -53,18 +54,24 @@ a {
   color: inherit;
 }
 
-button {
+button,
+input,
+select {
   font: inherit;
+  color: inherit;
+}
+
+button {
   cursor: pointer;
 }
 
-img {
+img,
+svg {
   max-width: 100%;
-  display: block;
 }
 
 :focus-visible {
-  outline: 3px solid var(--purple);
+  outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
 
@@ -73,7 +80,7 @@ img {
   left: 16px;
   top: -60px;
   z-index: 1000;
-  background: var(--purple-ink);
+  background: var(--ink);
   color: var(--white);
   padding: 10px 16px;
   border-radius: var(--radius-s);
@@ -89,6 +96,17 @@ img {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+.wordmark {
+  font-weight: 900;
+  font-size: 1.4rem;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 @media (prefers-reduced-motion: reduce) {

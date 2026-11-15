@@ -1,0 +1,175 @@
+.photos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .photos {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}
+
+.photo {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+.photo:first-child {
+  grid-column: span 2;
+  aspect-ratio: 2 / 1;
+}
+
+@media (min-width: 720px) {
+  .photo:first-child {
+    grid-column: auto;
+    aspect-ratio: auto;
+  }
+}
+
+.art {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  width: 52%;
+  height: 58%;
+  transform: translateX(-50%);
+  fill: currentColor;
+}
+
+.photo:first-child .art {
+  width: 36%;
+}
+
+.caption {
+  position: relative;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.tone0 {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.tone1 {
+  background: var(--orange);
+  color: var(--ink);
+}
+
+.tone2 {
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+.tone2 .caption {
+  color: var(--white);
+}
+
+.stats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.stats > div {
+  background: var(--surface);
+  border-radius: var(--radius-s);
+  padding: 12px 14px;
+}
+
+.stats dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 2px 0 0;
+  font-weight: 900;
+  font-size: 1.3rem;
+  line-height: 1.15;
+}
+
+.streak {
+  grid-column: span 2;
+  background: var(--yellow) !important;
+}
+
+.streak dt {
+  color: var(--ink);
+}
+
+@media (min-width: 720px) {
+  .streak {
+    grid-column: auto;
+  }
+}
+
+.offer {
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.offerTitle {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.offer a {
+  justify-self: start;
+}
+
+.nextTitle {
+  font-weight: 900;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 4px 0;
+}
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.history li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.history strong {
+  display: block;
+}
+
+.hDate {
+  flex: none;
+  width: 56px;
+  font-weight: 900;
+  color: var(--orange-text);
+}

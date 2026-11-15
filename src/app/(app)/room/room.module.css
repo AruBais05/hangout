@@ -1,0 +1,93 @@
+.meta {
+  margin-top: 12px;
+}
+
+.invite {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--radius-m);
+  border: 2px dashed var(--line);
+}
+
+@media (min-width: 640px) {
+  .invite {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .invite .inviteLabel,
+  .invite .status {
+    grid-column: 1 / -1;
+  }
+}
+
+.inviteLabel {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.link {
+  font-weight: 800;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.seatsHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.count {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.arrived {
+  animation: arrive 360ms var(--ease-out) both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0.3;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.demoButton {
+  align-self: stretch;
+  min-height: 56px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--yellow);
+  font-weight: 800;
+  font-size: 1.05rem;
+  transition: filter 160ms var(--ease-out);
+}
+
+.demoButton:hover {
+  filter: brightness(0.96);
+}
+
+.demoButton:disabled {
+  cursor: progress;
+}
+
+.mixTitle {
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.mixChip {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--white);
+  font-weight: 700;
+  font-size: 0.88rem;
+}

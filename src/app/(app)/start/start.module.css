@@ -1,0 +1,144 @@
+.group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.purposes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .purposes {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.tile {
+  position: relative;
+  cursor: pointer;
+}
+
+.tile input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.tile > span {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 84px;
+  padding: 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  transition: background-color 140ms var(--ease-out);
+}
+
+.tile:hover > span {
+  background: var(--yellow-soft);
+}
+
+.tile input:checked + span {
+  background: var(--yellow);
+}
+
+.tile input:focus-visible + span {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.field input {
+  width: 100%;
+  min-height: 50px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--white);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.field input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 1px;
+  border-color: var(--ink);
+}
+
+.error {
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.stepper button {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--white);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stepper output {
+  min-width: 56px;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.noteFree,
+.noteBig {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--radius-s);
+  background: var(--surface);
+}
+
+.noteBig {
+  background: var(--orange-soft);
+}
+
+.noteFree svg,
+.noteBig svg {
+  flex: none;
+  margin-top: 2px;
+}

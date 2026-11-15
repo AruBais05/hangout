@@ -6,7 +6,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: var(--lilac);
+  background: var(--surface);
   border-radius: var(--radius-m);
 }
 
@@ -39,18 +39,17 @@
 }
 
 .switch input:checked + span {
-  background: var(--purple);
-  color: var(--white);
+  background: var(--yellow);
 }
 
 .switch input:focus-visible + span {
-  outline: 3px solid var(--purple);
+  outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
 
 .demoCard {
-  background: var(--lilac-2);
-  border: 2px dashed var(--purple-soft);
+  background: var(--yellow-soft);
+  border: 2px dashed var(--orange);
   border-radius: var(--radius-s);
   padding: 12px 14px 4px;
   font-size: 0.95rem;
@@ -85,27 +84,27 @@
   width: 100%;
   min-height: 50px;
   padding: 12px 14px;
-  border: 2px solid var(--purple-soft);
+  border: 1.5px solid var(--line);
   border-radius: var(--radius-s);
   font: inherit;
   font-size: 1rem;
-  color: var(--purple-ink);
+  color: var(--ink);
   background: var(--white);
   font-variant-numeric: tabular-nums;
 }
 
 .field input:focus-visible {
-  outline: 3px solid var(--purple);
+  outline: 3px solid var(--ink);
   outline-offset: 1px;
-  border-color: var(--purple);
+  border-color: var(--ink);
 }
 
 .field input[aria-invalid="true"] {
-  border-color: #b4235a;
+  border-color: var(--danger);
 }
 
 .error {
-  color: #a11d50;
+  color: var(--danger);
   font-size: 0.88rem;
   font-weight: 600;
 }
@@ -123,8 +122,8 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: var(--purple);
-  color: var(--white);
+  background: var(--orange);
+  color: var(--ink);
   animation: pop 420ms var(--ease-out) both;
 }
 

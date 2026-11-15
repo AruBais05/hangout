@@ -1,0 +1,153 @@
+.ticket {
+  background: var(--yellow);
+  border-radius: var(--radius-l);
+  padding: 22px 22px 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.when {
+  font-weight: 800;
+}
+
+.planTitle {
+  font-weight: 900;
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.where {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.going {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 2px dashed rgb(27 26 23 / 0.25);
+  font-weight: 800;
+}
+
+.bill {
+  background: var(--white);
+  border-radius: var(--radius-m);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  padding: 20px;
+}
+
+.bill dl {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.bill dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 1.05rem;
+}
+
+.bill dd {
+  margin: 0;
+  text-align: right;
+}
+
+.total {
+  border-top: 2px dashed var(--line);
+  padding-top: 14px;
+  align-items: baseline;
+}
+
+.total dt {
+  font-weight: 800;
+}
+
+.total dd {
+  font-weight: 900;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+}
+
+.settleTitle {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.people {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.people li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 58px;
+}
+
+.paid,
+.waiting,
+.you {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.paid {
+  background: var(--ink);
+  color: var(--white);
+}
+
+.waiting {
+  border: 2.5px dashed var(--line);
+  color: var(--muted);
+}
+
+.you {
+  background: var(--orange);
+}
+
+.paidLabel {
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.freeNote {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 16px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.freeNote svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+.calButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .calButtons {
+    display: flex;
+  }
+}
