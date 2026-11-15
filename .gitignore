@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# source files kept out of the repo
+*.pdf
+Gemini_Generated_Image_*.jpeg
