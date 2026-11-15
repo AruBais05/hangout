@@ -83,11 +83,21 @@ async function guestToken(): Promise<string | null> {
   return s?.user.is_anonymous ? s.access_token : null;
 }
 
+/** Supabase errors in plain words. */
+function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("registered") || m.includes("already")) return "That email already has an account. Log in instead.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Too many sign-ups in a short time. Try again in a few minutes.";
+  if (m.includes("invalid") && m.includes("email")) return "Use a real email address you can open.";
+  if (m.includes("password")) return "Use a stronger password: at least 8 characters.";
+  return "Couldn't create the account right now. Try again in a moment.";
+}
+
 async function cloudSignUp(name: string, email: string, password: string): Promise<string | null> {
   const c = sb()!;
   const old = await guestToken();
   const { data, error } = await c.auth.signUp({ email: normEmail(email), password, options: { data: { name: name.trim().slice(0, 20) } } });
-  if (error) return error.message.includes("registered") ? "That email already has an account. Log in instead." : error.message;
+  if (error) return friendlyAuthError(error.message);
   if (!data.session) return "Check your email to confirm your account, then log in.";
   await moveGuestRooms(old);
   await loadCloudProfile();
