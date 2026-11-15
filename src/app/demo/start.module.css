@@ -1,0 +1,27 @@
+.chat {
+  display: grid;
+  gap: 8px;
+}
+
+.them,
+.bot {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--lilac);
+  color: var(--purple-ink);
+}
+
+.bot {
+  justify-self: end;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--purple);
+  color: var(--white);
+}
+
+.who {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.8;
+}

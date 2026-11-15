@@ -1,0 +1,36 @@
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.bestLabel {
+  font-weight: 700;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.bestTime {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-stretch: 108%;
+  font-size: 1.9rem;
+  line-height: 1.05;
+  margin: 4px 0 6px;
+}
+
+.extras {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meta {
+  display: block;
+}
+
+.ok {
+  color: var(--purple);
+  flex: none;
+}

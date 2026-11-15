@@ -1,0 +1,150 @@
+.page {
+  min-height: 100dvh;
+  background: var(--purple);
+}
+
+.column {
+  max-width: 440px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 520px) {
+  .page {
+    padding: 24px 16px;
+  }
+  .column {
+    min-height: calc(100dvh - 48px);
+    border-radius: var(--radius-l);
+    overflow: clip;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 20px 0;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--purple);
+}
+
+.mark {
+  border-radius: 24%;
+}
+
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.passToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  border: 2px solid var(--purple-soft);
+  background: var(--white);
+  color: var(--purple-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+
+.knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--purple-soft);
+  transition: background-color 160ms var(--ease-out);
+}
+
+.on {
+  background: var(--purple);
+  border-color: var(--purple);
+  color: var(--white);
+}
+.on .knob {
+  background: var(--white);
+}
+
+.iconLink {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--purple-ink);
+}
+.iconLink:hover {
+  background: var(--lilac);
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px 0;
+  min-height: 44px;
+}
+
+.progress {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--lilac);
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--purple);
+  border-radius: 99px;
+  transition: width 400ms var(--ease-out);
+}
+
+.stepLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: none;
+  color: var(--purple-ink);
+  font-weight: 600;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading {
+  visibility: hidden;
+}

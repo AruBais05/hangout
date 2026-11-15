@@ -1,0 +1,228 @@
+/* Shared building blocks for demo screens. */
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 20px 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-stretch: 108%;
+  font-size: 2.1rem;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--purple-ink);
+}
+
+.bigTitle {
+  composes: title;
+  font-size: 2.9rem;
+  line-height: 0.92;
+  color: var(--purple);
+  text-transform: uppercase;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.sectionLabel {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--purple-ink);
+  margin-bottom: 10px;
+}
+
+.card {
+  background: var(--lilac-2);
+  border-radius: var(--radius-m);
+  padding: 18px;
+}
+
+.cardPurple {
+  composes: card;
+  background: var(--purple);
+  color: var(--white);
+}
+
+.cardOutline {
+  composes: card;
+  background: var(--white);
+  box-shadow: inset 0 0 0 2px var(--lilac);
+}
+
+/* bottom action bar, one main action per screen */
+.actions {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 16px 0 calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0), var(--white) 28%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--purple);
+  color: var(--white);
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: background-color 160ms var(--ease-out), transform 120ms var(--ease-out);
+  touch-action: manipulation;
+}
+.primary:hover {
+  background: var(--purple-hover);
+}
+.primary:active {
+  transform: scale(0.98);
+}
+.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 18px;
+  border: 2px solid var(--purple);
+  border-radius: var(--radius-m);
+  background: var(--white);
+  color: var(--purple);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+}
+.secondary:hover {
+  background: var(--lilac-2);
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--purple);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--purple);
+  color: var(--white);
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.badgeSoft {
+  composes: badge;
+  background: var(--lilac);
+  color: var(--purple-deep);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--lilac);
+  color: var(--purple-deep);
+  font-family: var(--font-display);
+  font-weight: 800;
+  flex: none;
+}
+
+.avatarYou {
+  composes: avatar;
+  background: var(--purple);
+  color: var(--white);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.small {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.money {
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  min-height: 1.4em;
+  font-size: 0.92rem;
+  color: var(--purple-deep);
+  text-align: center;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid rgb(255 255 255 / 0.4);
+  border-top-color: var(--white);
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

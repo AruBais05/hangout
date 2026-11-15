@@ -1,0 +1,99 @@
+.grid {
+  display: grid;
+  grid-template-columns: 56px repeat(3, 1fr);
+  gap: 8px;
+}
+
+.row {
+  display: contents;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.time {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.date {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 72px;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: var(--lilac-2);
+  box-shadow: inset 0 0 0 2px var(--lilac);
+  color: var(--purple-ink);
+  text-align: left;
+  touch-action: manipulation;
+  transition: background-color 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+
+.cell:hover {
+  background: var(--lilac);
+}
+
+.on,
+.on:hover {
+  background: var(--purple);
+  color: var(--white);
+  box-shadow: none;
+}
+
+.dots {
+  display: flex;
+  gap: 3px;
+}
+
+.dot,
+.dotOn {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--purple-soft);
+}
+
+.dotOn {
+  background: var(--purple-mid);
+  box-shadow: none;
+}
+
+.on .dot {
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.5);
+}
+.on .dotOn {
+  background: var(--white);
+}
+
+.mark {
+  font-weight: 800;
+  font-size: 0.85rem;
+}
