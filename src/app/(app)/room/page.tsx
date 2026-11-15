@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
-import { PERSONALITIES } from "@/lib/config";
+import { PERSONALITIES, sizeOption } from "@/lib/config";
 import { inviteUrl } from "@/lib/invite";
 import PlaceMap from "@/components/PlaceMap";
 import {
@@ -14,6 +14,7 @@ import {
   meetingOf,
   mixLabel,
   crewPoint,
+  needsUnlock,
   groupMidpoint,
   myPoint,
   myType,
@@ -89,7 +90,7 @@ export default function Room() {
     window.open(inviteUrl(window.location.origin, m, host, state.groupQuiz), "_blank", "noopener");
   }
 
-  const next = big && !state.unlocked && !state.pass ? "/room/unlock" : "/room/ideas";
+  const next = needsUnlock(state) ? "/room/unlock" : "/room/ideas";
 
   return (
     <div className={s.screen}>
@@ -98,7 +99,7 @@ export default function Room() {
         <ul className={`${s.chips} ${styles.meta}`}>
           <li className={s.chip}>{purposeOf(m).label}</li>
           <li className={s.chip}>{rangeLabel(m.from, m.to)}</li>
-          <li className={s.chip}>{m.people} people</li>
+          <li className={s.chip}>{sizeOption(m.expectedSize)?.range ?? m.people} people</li>
           <li className={s.chip}>{m.city}</li>
           <li className={big ? s.chipYellow : s.chip}>{big ? "Big plan" : "Free"}</li>
           {state.pass && <li className={s.chipYellow}>Pass extras on</li>}

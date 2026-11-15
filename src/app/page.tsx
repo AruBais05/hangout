@@ -115,7 +115,7 @@ export default function Home() {
             <p className={styles.price}>
               {formatPrice(PRICES.unlockCents)} <span className={styles.per}>once per plan</span>
             </p>
-            <p className={styles.priceNote}>For trips and groups of 6 to 50. Free with Crew Pass.</p>
+            <p className={styles.priceNote}>For trips and groups of 10 to 50. Free with Crew Pass.</p>
             <ul className={styles.features}>
               {PLAN_FEATURES.unlock.map((f) => (
                 <li key={f}>{f}</li>

@@ -16,7 +16,7 @@ export default function Plans() {
     {
       name: "Big Plan unlock",
       price: formatPrice(PRICES.unlockCents),
-      note: "Once per big plan (trips, 6 to 50 people). Free with Crew Pass.",
+      note: "Once per big plan (trips, or 10 to 50 people). Free with Crew Pass.",
       features: PLAN_FEATURES.unlock,
     },
     {

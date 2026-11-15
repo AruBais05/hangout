@@ -12,7 +12,7 @@ export const PRICES = {
 /** A plan is "big" if any of these is true. */
 export const BIG_PLAN = {
   minDays: 2, // more than one day
-  minPeople: 6, // six or more people
+  minPeople: 10, // 10 or more people (expected or actually joined)
   budgetOverCents: 7500, // budget above $75 a person
 };
 
@@ -21,6 +21,19 @@ export const STREAK_LABEL = "3 months in a row";
 export const ROOM_CODE = "HX7-K2Q";
 export const MAX_DAYS = 10; // longest date range you can pick
 export const PEOPLE = { min: 2, max: 50 }; // a hangout is full at 50
+
+export type SizeId = "2-4" | "5-9" | "10-20" | "20-50";
+
+/** "Roughly how many people?" Only a hint: anyone with the link can join, up to 50.
+ *  `seats` is how many the demo crew fills. */
+export const SIZE_OPTIONS: { id: SizeId; range: string; name: string; seats: number; big: boolean }[] = [
+  { id: "2-4", range: "2–4", name: "Small hang", seats: 4, big: false },
+  { id: "5-9", range: "5–9", name: "Group", seats: 5, big: false },
+  { id: "10-20", range: "10–20", name: "Big group", seats: 12, big: true },
+  { id: "20-50", range: "20–50", name: "Party", seats: 25, big: true },
+];
+
+export const sizeOption = (id: SizeId | undefined) => SIZE_OPTIONS.find((o) => o.id === id);
 
 /* ---------- AI ---------- */
 
@@ -242,6 +255,7 @@ export const DEFAULT_MEETING = {
   from: "2026-11-16",
   to: "2026-11-22",
   people: 5,
+  expectedSize: "5-9" as SizeId,
 };
 
 /* ---------- partners ---------- */
@@ -441,7 +455,7 @@ export const PLAN_FEATURES = {
     "Private budget match: nobody says a number out loud",
     "Who's really in: a yes-or-no deadline before anyone books",
     "Dates across a whole weekend",
-    "Groups of 6 to 50 people",
+    "Groups of 10 to 50 people",
   ],
   pass: [
     "5 ideas to vote on instead of 3",

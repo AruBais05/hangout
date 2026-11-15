@@ -75,7 +75,7 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
 
   const priceCents = item === "unlock" ? PRICES.unlockCents : PRICES.passYearlyCents;
   const title = item === "unlock" ? "Unlock this big plan" : "Get Crew Pass";
-  const next = item === "unlock" ? "/start/people" : (state.returnTo ?? "/room/recap");
+  const next = item === "unlock" ? "/room/ideas" : (state.returnTo ?? "/room/recap");
 
   function fillDemo() {
     setF({ number: DEMO_CARD, expiry: "12/30", cvc: "123", zip: "10001" });

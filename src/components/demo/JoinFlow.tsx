@@ -27,15 +27,14 @@ export default function JoinFlow({ guest = false }: { guest?: boolean }) {
   if (!ready) return <div className={s.screen} aria-busy="true" />;
   // Guests: the invite link carries the group (?g=...). Read only after hydration, in the browser.
   const invite = guest ? decodeInvite(new URLSearchParams(window.location.search).get("g")) : null;
-  // An invite can't add a 51st person, or anyone once every seat is taken (on this device).
-  const m = meetingOf(state);
+  // An invite can't add a 51st person (on this device).
   const taken = state.crewJoined + (state.joined ? 1 : 0);
-  if (guest && !invite && state.meeting && taken >= Math.min(m.people, PEOPLE.max)) {
+  if (guest && !invite && state.meeting && taken >= PEOPLE.max) {
     return (
       <div className={s.screen}>
         <h1 className={s.title}>This hangout is full</h1>
         <p className={s.lede}>
-          All {m.people} seats are taken. Ask the host to start a new hangout{m.people >= PEOPLE.max ? ` (max ${PEOPLE.max} people)` : ""}.
+          {PEOPLE.max} people have joined, the most a hangout can have. Ask the host to start a new one.
         </p>
         <div className={s.actions}>
           <Link href="/" className={s.primary}>

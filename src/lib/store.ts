@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { BudgetRangeId, GroupQuiz, Personality, PurposeId, TravelMinutes, Vibe } from "./config";
+import type { BudgetRangeId, GroupQuiz, Personality, PurposeId, SizeId, TravelMinutes, Vibe } from "./config";
 import type { SuggestResult } from "./suggest";
 
 // Guest-only demo state, kept in localStorage. No accounts, no money held.
@@ -13,7 +13,8 @@ export type Meeting = {
   purpose: PurposeId;
   from: string; // YYYY-MM-DD
   to: string;
-  people: number;
+  people: number; // demo seats (from the expected size)
+  expectedSize?: SizeId; // "Roughly how many people?" hint
   name: string;
   vibe: Vibe;
   city: string; // "Austin, TX"

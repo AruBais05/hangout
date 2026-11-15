@@ -6,7 +6,7 @@ import CityField from "@/components/CityField";
 import { cleanHandle } from "@/lib/split";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
-import { DEFAULT_MEETING, DEMO_QUIZ, MAX_DAYS, PEOPLE, PRICES, PURPOSES, type GroupQuiz, type PurposeId, type Vibe } from "@/lib/config";
+import { DEFAULT_MEETING, DEMO_QUIZ, MAX_DAYS, PRICES, PURPOSES, SIZE_OPTIONS, sizeOption, type GroupQuiz, type PurposeId, type SizeId, type Vibe } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
 import { bigReasons, days, isBig, meetingOf } from "@/lib/plan";
 import { newMeeting, update, useDemo } from "@/lib/store";
@@ -19,7 +19,8 @@ export default function Start() {
   const [vibe, setVibe] = useState<Vibe>(DEFAULT_MEETING.vibe);
   const [from, setFrom] = useState(DEFAULT_MEETING.from);
   const [to, setTo] = useState(DEFAULT_MEETING.to);
-  const [people, setPeople] = useState(DEFAULT_MEETING.people);
+  const [size, setSize] = useState<SizeId>(DEFAULT_MEETING.expectedSize);
+  const people = sizeOption(size)!.seats; // demo seats; anyone with the link can still join, up to 50
   const [name, setName] = useState("");
   const [venmo, setVenmo] = useState<string | null>(null);
   const venmoValue = venmo ?? state.venmoHandle;
@@ -37,7 +38,7 @@ export default function Start() {
   const [picked, setPicked] = useState<{ name: string; center: [number, number] } | null>(null);
   const city = picked?.name ?? saved.city;
   const center = picked?.center ?? saved.center;
-  const meeting = { purpose, from, to, people, name, vibe, city, center };
+  const meeting = { purpose, from, to, people, expectedSize: size, name, vibe, city, center };
   const big = isBig(meeting);
 
   function next() {
@@ -57,7 +58,8 @@ export default function Start() {
       })
       .catch(() => {});
     // Big plans pay first (unlock or Crew Pass), then set up the crew.
-    router.push(isBig(meeting) && !state.pass ? "/room/unlock" : "/start/people");
+    // Big plans keep setting up; they unlock right before the ideas.
+    router.push("/start/people");
   }
 
   return (
@@ -130,32 +132,28 @@ export default function Start() {
           </p>
         </fieldset>
 
-        <div>
-          <span className={s.label} id="people-label">
-            How many people, with you?
-          </span>
-          <div className={styles.stepper} role="group" aria-labelledby="people-label">
-            <button
-              type="button"
-              aria-label="Fewer people"
-              onClick={() => setPeople((n) => Math.max(PEOPLE.min, n - 1))}
-              disabled={people <= PEOPLE.min}
-            >
-              −
-            </button>
-            <output aria-live="polite" className={s.money}>
-              {people}
-            </output>
-            <button
-              type="button"
-              aria-label="More people"
-              onClick={() => setPeople((n) => Math.min(PEOPLE.max, n + 1))}
-              disabled={people >= PEOPLE.max}
-            >
-              +
-            </button>
+        <fieldset className={styles.group}>
+          <legend className={s.label}>Roughly how many people?</legend>
+          <div className={styles.sizes}>
+            {SIZE_OPTIONS.map((o) => (
+              <label key={o.id} className={styles.tile}>
+                <input type="radio" name="size" checked={size === o.id} onChange={() => setSize(o.id)} />
+                <span>
+                  <strong>{o.range}</strong>
+                  <span className={s.sub}>{o.name}</span>
+                  {o.big && <span className={styles.bigBadge}>Big Plan</span>}
+                </span>
+              </label>
+            ))}
           </div>
-        </div>
+          {sizeOption(size)?.big && !state.pass && (
+            <p className={styles.sizeNote} role="status">
+              Big groups need Big Plan ({formatPrice(PRICES.unlockCents)} once) or Crew Pass. You can keep setting up,
+              and you&rsquo;ll unlock before getting ideas.
+            </p>
+          )}
+          <p className={s.small}>Just a guess. Anyone with the link can join, up to 50.</p>
+        </fieldset>
       </div>
 
       <label className={styles.field}>
@@ -199,7 +197,7 @@ export default function Start() {
 
       <div className={s.actions}>
         <button type="button" className={s.primary} onClick={next} disabled={!!dateError}>
-          {big && !state.pass ? `Next: unlock for ${formatPrice(PRICES.unlockCents)}` : "Next"}
+          Next
         </button>
       </div>
     </div>

@@ -148,3 +148,27 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+
+.sizes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bigBadge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--yellow);
+  font-size: 0.75rem;
+  font-weight: 800;
+  width: fit-content;
+}
+
+.sizeNote {
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  background: var(--yellow-soft);
+  font-size: 0.9rem;
+}

@@ -17,8 +17,8 @@ Website and clickable demo for Hangout: turn "we should hang out" into a plan.
 
 - **Free for everyone:** planning, voting, booking links and settle-up. No booking fee anywhere.
   Max 50 people per hangout.
-- **Big Plan unlock:** $4.99 once per big plan (trips, or 6+ people) for users without Crew Pass.
-  Big plans pay first, before any planning.
+- **Big Plan unlock:** $4.99 once per big plan (trips, or 10+ people expected or joined) for users without Crew Pass.
+  Setup stays open; big plans unlock right before the ideas and voting.
 - **Crew Pass:** $39.99/year (Stripe test checkout). 5 vote options instead of 3, unlimited big plans,
   cost split with who-owes-whom and Venmo buttons, private "My spending" chart, full history.
 - **Partner venues:** 10% off the share (partners are demo data until confirmed).

@@ -36,7 +36,8 @@ const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   window: z.object({ from: z.number().int().min(0).max(23), to: z.number().int().min(1).max(24) }),
   vibe: z.enum(["active", "chill"]),
-  groupSize: z.number().int().min(1).max(20),
+  groupSize: z.number().int().min(1).max(50),
+  expectedSize: z.enum(["2–4", "5–9", "10–20", "20–50"]).optional(),
   hasPass: z.boolean(),
   members: z
     .array(
@@ -49,7 +50,7 @@ const Body = z.object({
       }),
     )
     .min(1)
-    .max(20),
+    .max(50),
   fresh: z.boolean().optional(),
 });
 
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
     window: parsed.window.to > parsed.window.from ? parsed.window : { from: 18, to: 22 },
     vibe: parsed.vibe,
     groupSize: parsed.groupSize,
+    expectedSize: parsed.expectedSize,
     hasPass: parsed.hasPass,
     members: parsed.members.map((m) => ({ ...m, name: clean(m.name, 20) || "Friend" })),
   };
@@ -119,6 +121,8 @@ export async function POST(request: NextRequest) {
   }
 
   const partners = partnersFor(input.city);
+  // Big groups: the AI writes a line for at most 12 people (you first), so replies stay short.
+  const aiMembers = input.members.slice(0, 12);
   const events = await eventsFor(input);
 
   try {
@@ -131,7 +135,8 @@ export async function POST(request: NextRequest) {
       budget_per_person_usd: budgetCents / 100,
       vibe: input.vibe,
       group_size: input.groupSize,
-      members: input.members.map((m) => ({
+      expected_group_size: input.expectedSize ?? null,
+      members: aiMembers.map((m) => ({
         name: m.name,
         hangout_type: PERSONALITIES[m.type].name,
         rough_location: m.point ? { lat: m.point[0], lng: m.point[1] } : null,
@@ -150,7 +155,7 @@ export async function POST(request: NextRequest) {
     const text = await withTimeout((signal) => complete(system, user, signal));
     const reply = AiReply.parse(parseJson(text));
 
-    const names = input.members.map((m) => m.name).sort();
+    const names = aiMembers.map((m) => m.name).sort();
     const valid: PlanCard[] = [];
     const dropped: string[] = []; // which rule failed (no user content), for dev logs only
     for (const raw of reply.plans) {

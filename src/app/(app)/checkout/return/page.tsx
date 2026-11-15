@@ -67,7 +67,7 @@ export default function CheckoutReturn() {
   }
 
   const unlock = result.item === "unlock";
-  const next = unlock ? "/start/people" : (state.returnTo ?? "/room/recap");
+  const next = unlock ? "/room/ideas" : (state.returnTo ?? "/room/recap");
   return (
     <div className={s.screen}>
       <div className={styles.success} role="status">

@@ -5,7 +5,7 @@ import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { PLAN_FEATURES, PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
-import { AFTER_UNLOCK, bigReasons, meetingOf } from "@/lib/plan";
+import { AFTER_UNLOCK, bigReasons, joinedCount, meetingOf } from "@/lib/plan";
 import { update, useDemo } from "@/lib/store";
 import styles from "./unlock.module.css";
 
@@ -23,7 +23,7 @@ export default function Unlock() {
         </p>
         <div className={s.actions}>
           <Link href={AFTER_UNLOCK} className={s.primary}>
-            Continue
+            See the ideas
           </Link>
         </div>
       </div>
@@ -35,7 +35,7 @@ export default function Unlock() {
       <div>
         <h1 className={s.title}>This is a big plan</h1>
         <ul className={`${s.chips} ${styles.reasons}`} aria-label="Why">
-          {bigReasons(m).map((r) => (
+          {bigReasons(m, joinedCount(state)).map((r) => (
             <li key={r} className={s.chipYellow}>
               {r}
             </li>
@@ -45,12 +45,11 @@ export default function Unlock() {
 
       <section className={s.cardInk} aria-labelledby="found">
         <p id="found" className={styles.found}>
-          Hangout will find the time that works for all {m.people} of you in {m.city}, and plan ideas that fit the
-          group.
+          Hangout found the time that works for your group in {m.city}, and planned ideas that fit everyone.
         </p>
         <p className={styles.locked}>
           <Icon name="lock" size={16} />
-          Unlock to start planning
+          Unlock to see the ideas
         </p>
       </section>
 
@@ -75,7 +74,7 @@ export default function Unlock() {
 
       <div className={s.actions}>
         <Link href="/room/unlock/pay" className={s.primary}>
-          Unlock and continue – {formatPrice(PRICES.unlockCents)}
+          Unlock the ideas – {formatPrice(PRICES.unlockCents)}
         </Link>
         <Link href="/plans" className={s.textLink} onClick={() => update({ returnTo: "/room/unlock" })}>
           Plan big often? See Crew Pass

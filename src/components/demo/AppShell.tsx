@@ -11,10 +11,10 @@ import styles from "./AppShell.module.css";
 
 const ALL_STEPS = [
   { path: "/start", label: "Set up" },
-  { path: "/room/unlock", label: "Big plan", big: true },
   { path: "/start/people", label: "Your crew" },
   { path: "/room", label: "Waiting room" },
   { path: "/room/join", label: "Your answers" },
+  { path: "/room/unlock", label: "Big plan", big: true },
   { path: "/room/ideas", label: "Ideas" },
   { path: "/room/vote", label: "Vote" },
   { path: "/room/in", label: "Who's in", big: true },
@@ -28,15 +28,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [state, ready] = useDemo();
-  const big = isBig(meetingOf(state));
+  const big = isBig(meetingOf(state)) || needsUnlock(state);
   const steps = ALL_STEPS.filter((s) => !s.big || big);
   const index = steps.findIndex((s) => s.path === pathname);
 
-  // Big plans pay first: every planning page after setup sends you to the unlock until it's paid.
-  const locked =
-    ready &&
-    needsUnlock(state) &&
-    (pathname === "/start/people" || (pathname.startsWith("/room") && !pathname.startsWith("/room/unlock")));
+  // Big plans: setup stays open; ideas, voting and everything after send you to the unlock until it's paid.
+  const GATED = ["/room/ideas", "/room/vote", "/room/in", "/room/pay", "/room/plan", "/room/night", "/room/recap"];
+  const locked = ready && needsUnlock(state) && GATED.some((p) => pathname.startsWith(p));
   useEffect(() => {
     if (locked) router.replace("/room/unlock");
   }, [locked, router]);

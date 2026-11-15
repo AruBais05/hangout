@@ -21,6 +21,7 @@ const Schema = z.object({
   vb: z.enum(["active", "chill"]),
   nm: z.string().max(40),
   h: z.string().max(20),
+  es: z.enum(["2-4", "5-9", "10-20", "20-50"]).optional(),
   q: z
     .array(z.object({ t: z.string().min(1).max(120), a: z.array(z.object({ t: z.string().min(1).max(80), p: Points })).min(3).max(4) }))
     .length(5)
@@ -44,6 +45,7 @@ export function encodeInvite(m: Meeting, host: string, quiz: GroupQuiz | null): 
     vb: m.vibe,
     nm: m.name.slice(0, 40),
     h: host.slice(0, 20),
+    ...(m.expectedSize ? { es: m.expectedSize } : {}),
     // Only an AI-written quiz needs to travel; the fixed and demo quizzes are built in.
     ...(quiz?.source === "ai"
       ? { q: quiz.questions.map((x) => ({ t: x.text, a: x.answers.map((a) => ({ t: a.text, p: a.points as Record<string, 1 | 2> })) })) }
@@ -66,7 +68,7 @@ export function decodeInvite(g: string | null): Invite | null {
         }
       : null;
     return {
-      meeting: { purpose: d.p as PurposeId, from: d.f, to: d.t, people: d.n, city: d.c, center: d.ce, vibe: d.vb, name: d.nm },
+      meeting: { purpose: d.p as PurposeId, from: d.f, to: d.t, people: d.n, expectedSize: d.es, city: d.c, center: d.ce, vibe: d.vb, name: d.nm },
       host: d.h,
       quiz,
     };

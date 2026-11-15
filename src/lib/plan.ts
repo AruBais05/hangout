@@ -14,6 +14,7 @@ import {
   SLOT_HOURS,
   TYPE_ORDER,
   partnersFor,
+  sizeOption,
   type Member,
   type Personality,
   type QuizQuestion,
@@ -95,23 +96,31 @@ export function crewOf(m: Meeting): Member[] {
   return [...CREW_POOL, ...extra].slice(0, n);
 }
 
+/** People who have actually joined (demo crew + you). */
+export const joinedCount = (s: DemoState) => s.crewJoined + (s.joined ? 1 : 0);
+
+/** A big plan: a trip, an expected size of 10+, or 10+ seats. */
 export function isBig(m: Meeting): boolean {
-  return purposeOf(m).days >= BIG_PLAN.minDays || m.people >= BIG_PLAN.minPeople;
+  return purposeOf(m).days >= BIG_PLAN.minDays || !!sizeOption(m.expectedSize)?.big || m.people >= BIG_PLAN.minPeople;
 }
 
-/** A big plan must be paid for (unlock or Crew Pass) before any planning happens. */
+/** Big plans unlock (Big Plan or Crew Pass) before ideas and voting. Also when 10+ actually join. */
 export function needsUnlock(s: DemoState): boolean {
-  return !!s.meeting && isBig(s.meeting) && !s.unlocked && !s.pass;
+  if (!s.meeting || s.unlocked || s.pass) return false;
+  return isBig(s.meeting) || joinedCount(s) >= BIG_PLAN.minPeople;
 }
 
 /** Where a big plan continues once it's unlocked. */
-export const AFTER_UNLOCK = "/start/people";
+export const AFTER_UNLOCK = "/room/ideas";
 
-export function bigReasons(m: Meeting): string[] {
+export function bigReasons(m: Meeting, joined = 0): string[] {
   const r: string[] = [];
   const d = purposeOf(m).days;
   if (d >= BIG_PLAN.minDays) r.push(`${d} nights away`);
-  if (m.people >= BIG_PLAN.minPeople) r.push(`${m.people} people`);
+  const size = sizeOption(m.expectedSize);
+  if (joined >= BIG_PLAN.minPeople) r.push(`${joined} people joined`);
+  else if (size?.big) r.push(`${size.range} people`);
+  else if (m.people >= BIG_PLAN.minPeople) r.push(`${m.people} people`);
   return r;
 }
 
@@ -290,7 +299,9 @@ export function suggestInput(s: DemoState): SuggestInput {
     date: day,
     window: { from: SLOT_HOURS[slot].from, to: SLOT_HOURS[slot].to },
     vibe: m.vibe,
-    groupSize: m.people,
+    // The expected size shapes ideas until people join; then the joined count does.
+    groupSize: joinedCount(s) > 1 ? joinedCount(s) : m.people,
+    expectedSize: sizeOption(m.expectedSize)?.range,
     hasPass: !!s.pass,
     members: [me, ...crew],
   };

@@ -40,6 +40,7 @@ export type SuggestInput = {
   window: { from: number; to: number }; // hours, 24h clock
   vibe: Vibe;
   groupSize: number;
+  expectedSize?: string; // "10–20", a hint until people join
   hasPass: boolean;
   members: SuggestMember[];
 };
@@ -102,7 +103,7 @@ export function inputKey(input: SuggestInput): string {
   const members = [...input.members]
     .map((m) => [m.name, m.type, m.budget, m.point?.join(",") ?? "", m.travel].join("|"))
     .sort();
-  return JSON.stringify([input.city.toLowerCase(), input.date, input.window.from, input.window.to, input.vibe, input.groupSize, input.hasPass, members]);
+  return JSON.stringify([input.city.toLowerCase(), input.date, input.window.from, input.window.to, input.vibe, input.groupSize, input.expectedSize ?? "", input.hasPass, members]);
 }
 
 /* ---------- sample plans ---------- */
