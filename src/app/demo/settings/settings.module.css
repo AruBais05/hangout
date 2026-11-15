@@ -1,0 +1,86 @@
+.rows {
+  margin: 0 0 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rows dt {
+  color: var(--muted);
+}
+
+.rows dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.cancel {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--lilac);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--purple-ink);
+  font-weight: 700;
+}
+
+.confirm {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-s);
+  background: var(--lilac-2);
+}
+
+.confirmButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.danger {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #a11d50;
+  color: var(--white);
+  font-weight: 700;
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.segment {
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--lilac);
+}
+
+.segment button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--purple-ink);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.segment button[aria-checked="true"] {
+  background: var(--purple);
+  color: var(--white);
+}

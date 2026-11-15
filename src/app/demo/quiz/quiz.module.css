@@ -5,6 +5,18 @@
   min-width: 0;
 }
 
+.private {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: -4px 0 12px;
+}
+
+.private svg {
+  flex: none;
+  margin-top: 2px;
+}
+
 .budgets {
   display: grid;
   grid-template-columns: 1fr 1fr;

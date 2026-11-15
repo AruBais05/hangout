@@ -1,42 +1,33 @@
-import { LIMITS, PRICES } from "./config";
-
 export function formatCents(cents: number): string {
   const sign = cents < 0 ? "−" : "";
   const abs = Math.abs(cents);
-  return `${sign}$${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+  const dollars = Math.floor(abs / 100).toLocaleString("en-US");
+  return `${sign}$${dollars}.${String(abs % 100).padStart(2, "0")}`;
 }
 
 /** Whole-dollar prices print without cents ($4.99 stays, $5.00 becomes $5). */
 export function formatPrice(cents: number): string {
-  return cents % 100 === 0 ? `$${cents / 100}` : formatCents(cents);
+  return cents % 100 === 0 ? `$${(cents / 100).toLocaleString("en-US")}` : formatCents(cents);
 }
 
-export type ShareBreakdown = {
-  shareCents: number;
-  discountCents: number;
-  feeCents: number;
-  feeWaived: boolean;
+export type Split = {
+  stayCents: number;
+  unlockCents: number;
   totalCents: number;
-  savedCents: number;
+  people: number;
+  eachCents: number; // what each friend sends the organizer
+  unlockEachCents: number; // the unlock's part of that
+  organizerCents: number; // organizer's own share, absorbs the rounding
 };
 
 /**
- * One person's payment for a booked hangout.
- * The fee is waived when the person has the Pass and has used fewer than
- * the monthly fee-free bookings.
+ * Splits the group cost evenly. The organizer paid the venue (and the unlock),
+ * so everyone else pays the organizer back. Rounding leftovers stay with the organizer.
  */
-export function shareBreakdown(
-  shareCents: number,
-  partner: boolean,
-  hasPass: boolean,
-  feeFreeUsed: number,
-): ShareBreakdown {
-  const discountCents = partner
-    ? Math.round((shareCents * PRICES.partnerDiscountPct) / 100)
-    : 0;
-  const feeWaived = hasPass && feeFreeUsed < LIMITS.feeFreeBookingsPerMonth;
-  const feeCents = feeWaived ? 0 : PRICES.bookingFeeCents;
-  const totalCents = shareCents - discountCents + feeCents;
-  const savedCents = discountCents + (feeWaived ? PRICES.bookingFeeCents : 0);
-  return { shareCents, discountCents, feeCents, feeWaived, totalCents, savedCents };
+export function splitCost(stayCents: number, unlockCents: number, people: number): Split {
+  const totalCents = stayCents + unlockCents;
+  const eachCents = Math.floor(totalCents / people);
+  const organizerCents = totalCents - eachCents * (people - 1);
+  const unlockEachCents = Math.round(unlockCents / people);
+  return { stayCents, unlockCents, totalCents, people, eachCents, unlockEachCents, organizerCents };
 }

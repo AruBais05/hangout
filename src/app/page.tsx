@@ -1,29 +1,29 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import AvailabilityBand from "@/components/AvailabilityBand";
-import { LIMITS, PLAN_FEATURES, PRICES } from "@/lib/config";
+import { BIG_PLAN, PLAN_FEATURES, PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
 import styles from "./page.module.css";
 
 const steps = [
   {
     title: "Everyone adds their free time",
-    body: "Each friend taps the days and times they're free, plus a budget and whether they feel active or chill. No calendar sign-in needed.",
+    body: "Each friend taps when they're free and picks a budget only they can see. No calendar sign-in needed.",
     tone: "purple",
   },
   {
     title: "Hangout suggests three plans",
-    body: "We find the time that works for everyone and pick three ideas that fit the group's budget, each with a short reason why.",
+    body: "We find the time that works for everyone and three ideas inside the group's budget, each with a short reason why.",
     tone: "lilac",
   },
   {
-    title: "The group votes",
-    body: "Everyone picks a favorite. When the timer runs out, or someone ends the vote, the winner is locked in.",
+    title: "The group votes and says who's in",
+    body: "Everyone picks a favorite. For big plans, a yes-or-no deadline shows who's really coming before anyone books.",
     tone: "deep",
   },
   {
-    title: "Pay your share, then go",
-    body: "Each person pays only their part. You get a calendar invite, check in on the night, and see a recap after.",
+    title: "Book it, split it, go",
+    body: "You book the venue directly. Hangout splits the cost and sends each friend a link to pay you back.",
     tone: "white",
   },
 ] as const;
@@ -59,8 +59,8 @@ export default function Home() {
           <div className={styles.heroAside}>
             <p className={styles.lede}>
               Hangout turns the group chat&rsquo;s &ldquo;we should hang out&rdquo; into a booked
-              plan. Everyone adds their free time and budget, the group votes, and we book the
-              winner.
+              plan. Everyone adds their free time and a private budget, the group votes, and
+              Hangout splits the cost. Everyday hangouts are free.
             </p>
             <Link href="/demo" className={styles.demoButton}>
               Try with a demo crew
@@ -91,72 +91,84 @@ export default function Home() {
         <section id="pricing" className={styles.pricing} aria-labelledby="pricing-title">
           <div className={styles.pricingHead}>
             <h2 id="pricing-title" className={styles.sectionTitle}>
-              Planning is free.
+              Everyday hangouts are free.
             </h2>
             <p className={styles.pricingLede}>
-              Groups, voting and check-ins never cost anything. You only pay when we book a venue
-              for you.
+              Coffee, dinner, a movie night: always free. You pay only to unlock a big plan, like a
+              weekend away or a birthday for ten.
             </p>
           </div>
 
           <div className={styles.plans}>
             <article className={styles.plan} aria-labelledby="plan-free">
               <h3 id="plan-free" className={styles.planName}>
-                Free
+                Everyday
               </h3>
               <p className={styles.price}>
                 <span className={styles.amount}>$0</span>
               </p>
-              <p className={styles.priceNote}>For every group, forever</p>
+              <p className={styles.priceNote}>Nobody pays, ever</p>
               <ul className={styles.features}>
-                {PLAN_FEATURES.free.map((f) => (
+                {PLAN_FEATURES.everyday.map((f) => (
                   <li key={f}>{f}</li>
                 ))}
               </ul>
             </article>
 
-            <article className={styles.plan} aria-labelledby="plan-per">
-              <h3 id="plan-per" className={styles.planName}>
-                Pay per hangout
+            <article className={`${styles.plan} ${styles.planPass}`} aria-labelledby="plan-unlock">
+              <h3 id="plan-unlock" className={styles.planName}>
+                Big Plan unlock
               </h3>
               <p className={styles.price}>
-                <span className={styles.amount}>{formatPrice(PRICES.bookingFeeCents)}</span>
-                <span className={styles.per}>booking fee</span>
-              </p>
-              <p className={styles.priceNote}>Per person, on each booked hangout</p>
-              <ul className={styles.features}>
-                {PLAN_FEATURES.perHangout.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-            </article>
-
-            <article className={`${styles.plan} ${styles.planPass}`} aria-labelledby="plan-pass">
-              <h3 id="plan-pass" className={styles.planName}>
-                Hangout Pass
-              </h3>
-              <p className={styles.price}>
-                <span className={styles.amount}>{formatPrice(PRICES.passMonthlyCents)}</span>
-                <span className={styles.per}>a month</span>
+                <span className={styles.amount}>{formatPrice(PRICES.unlockCents)}</span>
+                <span className={styles.per}>once per plan</span>
               </p>
               <p className={styles.priceNote}>
-                or {formatPrice(PRICES.passYearlyCents)} a year. One person buys it.
+                The organizer pays. It goes into the split, so friends pay them back about $1 each.
+              </p>
+              <ul className={styles.features}>
+                {PLAN_FEATURES.unlock.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
+              <Link href="/demo" className={styles.passButton}>
+                Try a big plan in the demo
+              </Link>
+            </article>
+
+            <article className={styles.plan} aria-labelledby="plan-pass">
+              <h3 id="plan-pass" className={styles.planName}>
+                Crew Pass
+              </h3>
+              <p className={styles.price}>
+                <span className={styles.amount}>{formatPrice(PRICES.passYearlyCents)}</span>
+                <span className={styles.per}>a year</span>
+              </p>
+              <p className={styles.priceNote}>
+                or {formatPrice(PRICES.passMonthlyCents)} a month, for groups that plan big often
               </p>
               <ul className={styles.features}>
                 {PLAN_FEATURES.pass.map((f) => (
                   <li key={f}>{f}</li>
                 ))}
               </ul>
-              <Link href="/demo/pass" className={styles.passButton}>
-                Get Hangout Pass – {formatPrice(PRICES.passMonthlyCents)}/month
-              </Link>
             </article>
           </div>
-          <p className={styles.fine}>
-            With the Pass, the {formatPrice(PRICES.bookingFeeCents)} fee is waived on{" "}
-            {LIMITS.feeFreeBookingsPerMonth} bookings a month. Friends without the Pass still pay
-            their own fee.
-          </p>
+
+          <div className={styles.promises}>
+            <p>
+              <strong>If your plan doesn&rsquo;t happen,</strong> the unlock carries over to your
+              next one.
+            </p>
+            <p>
+              <strong>A big plan</strong> is more than one day, {BIG_PLAN.minPeople} or more
+              people, or over {formatPrice(BIG_PLAN.budgetOverCents)} a person.
+            </p>
+            <p>
+              <strong>We never hold your money.</strong> You pay venues directly. Partner stays and
+              tickets pay us a small commission, never you.
+            </p>
+          </div>
         </section>
 
         <section className={styles.closer} aria-labelledby="closer-title">

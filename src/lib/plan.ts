@@ -1,129 +1,117 @@
 import {
+  BIG_PLAN,
   CREW,
   CREW_AVAILABILITY,
   CREW_VOTES,
-  DAY_DATES,
-  LIMITS,
   OPTIONS,
-  PRICES,
-  SLOT_TIMES,
-  type Day,
+  PARTS,
+  TRIP,
+  WEEKENDS,
   type Option,
-  type Slot,
   type SlotKey,
+  type WeekendId,
 } from "./config";
+import { formatPrice } from "./money";
 
-const DAY_NAMES: Record<Day, string> = {
-  Thu: "Thursday",
-  Fri: "Friday",
-  Sat: "Saturday",
-  Sun: "Sunday",
-};
+export const GROUP_SIZE = CREW.length + 1;
 
-export function splitSlot(key: SlotKey): { day: Day; slot: Slot } {
-  const [day, slot] = key.split("-") as [Day, Slot];
-  return { day, slot };
+export function weekendLabel(id: WeekendId): string {
+  return WEEKENDS.find((w) => w.id === id)!.label;
 }
 
-export function slotLabel(key: SlotKey): string {
-  const { day, slot } = splitSlot(key);
-  return `${day} ${SLOT_TIMES[slot].label}`;
+/** People free for every part of a weekend (crew + you). */
+export function fullWeekendCount(id: WeekendId, mine: SlotKey[]): number {
+  const keys = PARTS.map((p) => `${id}|${p}` as SlotKey);
+  const crew = CREW.filter((m) => keys.every((k) => CREW_AVAILABILITY[m.id].includes(k))).length;
+  return crew + (keys.every((k) => mine.includes(k)) ? 1 : 0);
 }
 
-export function longDate(key: SlotKey): string {
-  const { day, slot } = splitSlot(key);
-  const d = new Date(`${DAY_DATES[day]}T12:00:00`);
-  const md = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${day} ${md}, ${SLOT_TIMES[slot].label}`;
+export function crewFreeCount(key: SlotKey): number {
+  return CREW.filter((m) => CREW_AVAILABILITY[m.id].includes(key)).length;
 }
 
-/** How many of the five people (crew + you) are free in a slot. */
-export function freeCount(key: SlotKey, mine: SlotKey[]): number {
-  const crew = CREW.filter((m) => CREW_AVAILABILITY[m.id].includes(key)).length;
-  return crew + (mine.includes(key) ? 1 : 0);
+export function bestWeekend(mine: SlotKey[]): { id: WeekendId; count: number } {
+  return WEEKENDS.map((w) => ({ id: w.id as WeekendId, count: fullWeekendCount(w.id, mine) })).reduce(
+    (a, b) => (b.count > a.count ? b : a),
+  );
 }
 
-export type RankedOption = Option & { reasons: string[]; free: number; netShareCents: number };
-
-export function netShare(o: Option): number {
-  return o.partner ? o.shareCents - Math.round((o.shareCents * PRICES.partnerDiscountPct) / 100) : o.shareCents;
+/** Why this plan counts as big (any rule is enough). */
+export function bigPlanReasons(days: number, people: number, budgetCents: number): string[] {
+  const r: string[] = [];
+  if (days >= BIG_PLAN.minDays) r.push(`${days} days`);
+  if (people >= BIG_PLAN.minPeople) r.push(`${people} people`);
+  if (budgetCents > BIG_PLAN.budgetOverCents) r.push(`over ${formatPrice(BIG_PLAN.budgetOverCents)} a person`);
+  return r;
 }
 
 /**
- * Rank options by how many people can make it, then budget fit, then vibe.
- * The partner venue wins ties, so the demo's winning option is the partner one.
+ * Private budget match: everyone's number stays hidden; only the range that
+ * works for the whole group is shown. Top = the lowest budget, bottom = 75% of it.
  */
-export function rankOptions(
-  mine: SlotKey[],
-  budgetCents: number,
-  vibe: "active" | "chill",
-  hasPass: boolean,
-): RankedOption[] {
-  const groupSize = CREW.length + 1;
-  const activeVotes = CREW.filter((m) => m.vibe === "active").length + (vibe === "active" ? 1 : 0);
-  const groupVibe = activeVotes * 2 >= groupSize ? "active" : "chill";
-  const pool = OPTIONS.filter((o) => hasPass || !o.passOnly);
+export function workableRange(myBudgetCents: number): { low: number; high: number } {
+  const high = Math.min(myBudgetCents, ...CREW.map((m) => m.budgetCents));
+  const low = Math.floor((high * 0.75) / 1000) * 1000;
+  return { low, high };
+}
 
-  const ranked = pool.map((o) => {
-    const free = freeCount(o.slot, mine);
-    const net = netShare(o);
+export function perPerson(o: Option): number {
+  return Math.round(o.totalCents / GROUP_SIZE);
+}
+
+export type RankedOption = Option & { reasons: string[]; eachCents: number };
+
+export function rankOptions(mine: SlotKey[], myBudgetCents: number, vibe: "active" | "chill"): RankedOption[] {
+  const { high } = workableRange(myBudgetCents);
+  const best = bestWeekend(mine);
+  const actives = CREW.filter((m) => m.vibe === "active").length + (vibe === "active" ? 1 : 0);
+  const groupVibe = actives * 2 >= GROUP_SIZE ? "active" : "chill";
+
+  const ranked = OPTIONS.map((o) => {
+    const each = perPerson(o);
     const reasons: string[] = [];
-    const { day } = splitSlot(o.slot);
-    if (free === groupSize) reasons.push(`Fits everyone's ${DAY_NAMES[day]}`);
-    else reasons.push(`${free} of ${groupSize} free ${DAY_NAMES[day]}`);
-    if (net <= budgetCents) reasons.push("Under your budget");
-    if (o.partner) reasons.push(`Partner venue: ${PRICES.partnerDiscountPct}% off`);
-    if (o.vibe === groupVibe && reasons.length < 3) reasons.push(`Matches the ${groupVibe} vibe`);
-    const score =
-      free * 100 + (net <= budgetCents ? 30 : 0) + (o.vibe === groupVibe ? 10 : 0) + (o.partner ? 5 : 0);
-    return { ...o, reasons, free, netShareCents: net, score };
+    reasons.push(
+      best.count === GROUP_SIZE
+        ? `Everyone's free ${weekendLabel(best.id)}`
+        : `${best.count} of ${GROUP_SIZE} free ${weekendLabel(best.id)}`,
+    );
+    if (each <= high) reasons.push("Inside the group's range");
+    else reasons.push(`${formatPrice(each - high)} over the range`);
+    if (o.partner) reasons.push("Partner stay");
+    else if (o.vibe === groupVibe) reasons.push(`Matches the ${groupVibe} vibe`);
+    const score = (each <= high ? 100 : 0) + (o.vibe === groupVibe ? 10 : 0) + (o.partner ? 5 : 0);
+    return { ...o, reasons, eachCents: each, score };
   });
-
   ranked.sort((a, b) => b.score - a.score);
-  // Keep the partner venue first so the demo always books the partner option.
-  const pIdx = ranked.findIndex((o) => o.partner);
-  if (pIdx > 0) ranked.unshift(ranked.splice(pIdx, 1)[0]);
-  const count = hasPass ? LIMITS.voteOptionsPass : LIMITS.voteOptionsFree;
-  return ranked.slice(0, count).map((o) => {
+  // The demo's winner is the partner stay; keep it first.
+  const p = ranked.findIndex((o) => o.partner);
+  if (p > 0) ranked.unshift(ranked.splice(p, 1)[0]);
+  return ranked.map((o) => {
     const { score, ...rest } = o;
     void score;
     return rest;
   });
 }
 
-export function tally(optionIds: string[], myVote: string | null): Record<string, number> {
-  const t: Record<string, number> = Object.fromEntries(optionIds.map((id) => [id, 0]));
-  for (const id of Object.values(CREW_VOTES)) if (id in t) t[id]++;
-  if (myVote && myVote in t) t[myVote]++;
+export function tally(myVote: string | null): Record<string, number> {
+  const t: Record<string, number> = Object.fromEntries(OPTIONS.map((o) => [o.id, 0]));
+  for (const id of Object.values(CREW_VOTES)) t[id]++;
+  if (myVote) t[myVote]++;
   return t;
 }
 
-export function winner(optionIds: string[], myVote: string | null): Option {
-  const t = tally(optionIds, myVote);
-  const best = optionIds.reduce((a, b) => (t[b] > t[a] ? b : a), optionIds[0]);
-  return OPTIONS.find((o) => o.id === best)!;
-}
-
-/** The demo always books the partner venue (it wins the crew vote). */
+/** The partner stay always wins the crew vote in the demo. */
 export const BOOKED = OPTIONS.find((o) => o.partner)!;
 
-function stamp(key: SlotKey, addMinutes = 0): string {
-  const { day, slot } = splitSlot(key);
-  const [h, m] = SLOT_TIMES[slot].start.split(":").map(Number);
-  const total = h * 60 + m + addMinutes;
-  const date = DAY_DATES[day].replaceAll("-", "");
-  const hh = String(Math.floor(total / 60)).padStart(2, "0");
-  const mm = String(total % 60).padStart(2, "0");
-  return `${date}T${hh}${mm}00`;
-}
+const stamp = (local: string) => local.replace(/[-:]/g, "") + "00";
 
 export function googleCalendarUrl(o: Option): string {
   const p = new URLSearchParams({
     action: "TEMPLATE",
     text: `${o.title} with the crew`,
-    dates: `${stamp(o.slot)}/${stamp(o.slot, o.minutes)}`,
-    details: `Booked with Hangout. ${o.venue}.`,
-    location: `${o.venue}, ${o.address}`,
+    dates: `${stamp(TRIP.start)}/${stamp(TRIP.end)}`,
+    details: `Planned with Hangout. ${o.place}.`,
+    location: `${o.place}, ${o.address}`,
     ctz: "America/New_York",
   });
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
@@ -137,13 +125,13 @@ export function icsFile(o: Option): string {
     "PRODID:-//Hangout//Demo//EN",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
-    `UID:${o.id}-${stamp(o.slot)}@hangout.app`,
+    `UID:${o.id}-${stamp(TRIP.start)}@hangout.app`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
-    `DTSTART;TZID=America/New_York:${stamp(o.slot)}`,
-    `DTEND;TZID=America/New_York:${stamp(o.slot, o.minutes)}`,
+    `DTSTART;TZID=America/New_York:${stamp(TRIP.start)}`,
+    `DTEND;TZID=America/New_York:${stamp(TRIP.end)}`,
     `SUMMARY:${esc(`${o.title} with the crew`)}`,
-    `LOCATION:${esc(`${o.venue}, ${o.address}`)}`,
-    "DESCRIPTION:Booked with Hangout.",
+    `LOCATION:${esc(`${o.place}, ${o.address}`)}`,
+    "DESCRIPTION:Planned with Hangout.",
     "END:VEVENT",
     "END:VCALENDAR",
     "",

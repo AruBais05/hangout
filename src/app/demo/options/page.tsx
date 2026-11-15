@@ -5,36 +5,59 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
-import { LIMITS } from "@/lib/config";
-import { formatCents } from "@/lib/money";
-import { longDate, rankOptions } from "@/lib/plan";
-import { update, useDemo } from "@/lib/store";
+import { CREW } from "@/lib/config";
+import { formatCents, formatPrice } from "@/lib/money";
+import { bestWeekend, rankOptions, weekendLabel, workableRange } from "@/lib/plan";
+import { isOpen, update, useDemo } from "@/lib/store";
 import styles from "./options.module.css";
+
+const VOTE_SECONDS = 90;
 
 export default function Options() {
   const router = useRouter();
   const [state] = useDemo();
-  const options = rankOptions(
-    state.availability,
-    state.budgetCents ?? 4000,
-    state.vibe ?? "active",
-    !!state.pass,
-  );
-  const [pick, setPick] = useState<string | null>(state.myVote ?? null);
+  const budget = state.budgetCents ?? 20000;
+  const options = rankOptions(state.availability, budget, state.vibe ?? "active");
+  const range = workableRange(budget);
+  const best = bestWeekend(state.availability);
+  const [pick, setPick] = useState<string | null>(null);
+  const chosen = pick ?? state.myVote;
+
+  if (!isOpen(state)) {
+    return (
+      <div className={s.screen}>
+        <h1 className={s.title}>Unlock this plan first</h1>
+        <p className={s.lede}>Big plans need the one-time unlock or a Crew Pass.</p>
+        <div className={s.actions}>
+          <Link href="/demo/unlock" className={s.primary}>
+            Go to unlock
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   function vote() {
-    update({ myVote: pick, votingEnded: false, voteEndsAt: Date.now() + LIMITS.voteSeconds * 1000 });
+    update({ myVote: chosen, votingEnded: false, voteEndsAt: Date.now() + VOTE_SECONDS * 1000 });
     router.push("/demo/vote");
   }
 
   return (
     <div className={s.screen}>
-      <div>
-        <h1 className={s.title}>{options.length} ideas for your crew</h1>
-        <p className={s.lede} style={{ marginTop: 8 }}>
-          Ranked by who can make it, then budget and vibe. Pick your favorite.
+      <h1 className={s.title}>3 stays for {weekendLabel(best.id)}</h1>
+
+      <section className={styles.range} aria-labelledby="range-title">
+        <p id="range-title" className={styles.rangeLabel}>
+          <Icon name="lock" size={16} />
+          Private budget match
         </p>
-      </div>
+        <p className={styles.rangeValue}>
+          {formatPrice(range.low)}–{formatPrice(range.high)} a person
+        </p>
+        <p className={styles.rangeNote}>
+          Works for all {CREW.length + 1} of you. Nobody&rsquo;s number is shown.
+        </p>
+      </section>
 
       <fieldset className={styles.options}>
         <legend className="visually-hidden">Your vote</legend>
@@ -44,7 +67,7 @@ export default function Options() {
               type="radio"
               name="vote"
               value={o.id}
-              checked={pick === o.id}
+              checked={chosen === o.id}
               onChange={() => setPick(o.id)}
             />
             <span className={styles.box}>
@@ -54,11 +77,12 @@ export default function Options() {
                 </span>
                 <span className={s.grow}>
                   <span className={styles.name}>{o.title}</span>
-                  <span className={styles.meta}>{o.venue}</span>
-                  <span className={styles.meta}>{longDate(o.slot)}</span>
+                  <span className={styles.meta}>
+                    {o.place}, {o.address}
+                  </span>
                 </span>
                 <span className={`${styles.price} ${s.money}`}>
-                  {formatCents(o.shareCents)}
+                  {formatCents(o.eachCents)}
                   <span className={styles.each}>each</span>
                 </span>
               </span>
@@ -75,21 +99,12 @@ export default function Options() {
         ))}
       </fieldset>
 
-      {!state.pass && (
-        <p className={s.small}>
-          Groups with a Hangout Pass get {LIMITS.voteOptionsPass} ideas.{" "}
-          <Link href="/demo/plans" className={styles.inline}>
-            See plans
-          </Link>
-        </p>
-      )}
-
       <div className={s.actions}>
-        <button type="button" className={s.primary} disabled={!pick} onClick={vote}>
+        <button type="button" className={s.primary} disabled={!chosen} onClick={vote}>
           Vote for this
         </button>
         <p className={s.small} aria-live="polite">
-          {pick ? " " : "Pick one to vote."}
+          {chosen ? "Prices are for 2 nights, split 6 ways." : "Pick one to vote."}
         </p>
       </div>
     </div>

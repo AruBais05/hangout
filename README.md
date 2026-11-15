@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hangout
 
-## Getting Started
+Website and clickable demo for Hangout: turn "we should hang out" into a booked plan.
 
-First, run the development server:
+- `/` is the landing page: hero, how it works, pricing.
+- `/demo` is the 10-step demo of a Big Plan (a weekend away for 6), with no sign-up.
+
+## Business model (from "Hangout business model and proof of willingness to pay")
+
+- **Everyday**: $0. Dates, budget and vibe matching, three options, a vote, calendar, recap.
+- **Big Plan unlock**: $4.99 once per plan, paid by the organizer and added to the cost split.
+  A plan is big if it's more than one day, 6+ people, or over $75 a person.
+- **Crew Pass**: $39.99 a year or $5.99 a month. Unlimited big plans, next hangout proposed
+  automatically, full group history.
+- **Partner commission**: partners pay Hangout; users never do. Hangout never holds money.
+
+All prices, rules and demo data live in `src/lib/config.ts`. Money is integer cents.
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy to Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Import the GitHub repo in Vercel and deploy with the default Next.js settings.
+No environment variables are needed: payments in the demo are mock only, nothing is charged.
 
-## Learn More
+## Demo notes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Demo state is saved in the browser (localStorage) only.
+- The header switch toggles "Has pass / No pass" instantly. Settings has "Reset demo".
+- Demo card for checkout: 4242 4242 4242 4242, any future date, any CVC, any ZIP.

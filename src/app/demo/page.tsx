@@ -4,14 +4,14 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { CREW, GROUP_NAME } from "@/lib/config";
-import { restartHangout } from "@/lib/store";
+import { restartPlan } from "@/lib/store";
 import styles from "./start.module.css";
 
 export default function DemoStart() {
   const router = useRouter();
 
   function start() {
-    restartHangout();
+    restartPlan();
     router.push("/demo/quiz");
   }
 
@@ -21,13 +21,14 @@ export default function DemoStart() {
 
       <div className={styles.chat} aria-label="Group chat">
         <p className={styles.them}>
-          <span className={styles.who}>Maya</span>we should all hang out soon
+          <span className={styles.who}>Maya</span>we should do a weekend away before the holidays
         </p>
         <p className={styles.them}>
           <span className={styles.who}>Jordan</span>yes!! when is everyone free
         </p>
         <p className={styles.bot}>
-          <span className={styles.who}>Hangout</span>4 of 5 have added their times. Waiting on you.
+          <span className={styles.who}>Hangout</span>You started a plan: Weekend away. 5 of 6 have
+          answered. Waiting on you.
         </p>
       </div>
 
@@ -52,7 +53,7 @@ export default function DemoStart() {
             <span className={s.avatarYou} aria-hidden="true">
               Y
             </span>
-            <span className={s.grow}>You</span>
+            <span className={s.grow}>You, organizer</span>
             <span className={s.small}>Not yet</span>
           </li>
         </ul>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { formatPrice } from "@/lib/money";
 import { update, useDemo } from "@/lib/store";
 import styles from "./quiz.module.css";
 
-const BUDGETS = [2500, 4000, 6000, 8000];
+const BUDGETS = [10000, 20000, 30000, 40000];
 
 export default function Quiz() {
   const router = useRouter();
@@ -18,7 +19,11 @@ export default function Quiz() {
       <h1 className={s.title}>What are you up for?</h1>
 
       <fieldset className={styles.group}>
-        <legend className={s.sectionLabel}>Your budget per person</legend>
+        <legend className={s.sectionLabel}>What you can spend on the weekend</legend>
+        <p className={`${s.small} ${styles.private}`}>
+          <Icon name="lock" size={16} />
+          Only you see this. The group only sees a range that works for everyone.
+        </p>
         <div className={styles.budgets}>
           {BUDGETS.map((b, i) => (
             <label key={b} className={styles.pill}>
@@ -48,7 +53,7 @@ export default function Quiz() {
             />
             <span className={styles.vibeBox}>
               <span className={styles.vibeName}>Active</span>
-              <span className={styles.vibeHint}>Climbing, bowling, a long walk</span>
+              <span className={styles.vibeHint}>Hikes, a lake, early starts</span>
             </span>
           </label>
           <label className={styles.vibe}>
@@ -60,7 +65,7 @@ export default function Quiz() {
             />
             <span className={styles.vibeBox}>
               <span className={styles.vibeName}>Chill</span>
-              <span className={styles.vibeHint}>Dinner, pottery, karaoke</span>
+              <span className={styles.vibeHint}>Long dinners, a fire, sleeping in</span>
             </span>
           </label>
         </div>

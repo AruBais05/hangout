@@ -296,7 +296,7 @@
 
 @media (min-width: 900px) {
   .plans {
-    grid-template-columns: 1fr 1fr 1.25fr;
+    grid-template-columns: 1fr 1.25fr 1fr;
     gap: 0;
     align-items: stretch;
   }
@@ -336,6 +336,11 @@
 
 .per {
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.price {
+  flex-wrap: wrap;
 }
 
 .priceNote {
@@ -402,10 +407,22 @@
   outline-color: var(--white);
 }
 
-.fine {
-  margin-top: 20px;
-  color: var(--muted);
-  max-width: 44rem;
+.promises {
+  margin-top: clamp(24px, 3vw, 36px);
+  display: grid;
+  gap: 16px;
+  color: var(--purple-ink);
+}
+
+.promises strong {
+  color: var(--purple);
+}
+
+@media (min-width: 900px) {
+  .promises {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
 }
 
 /* ---------- closer ---------- */

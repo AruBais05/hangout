@@ -6,6 +6,12 @@
       "runtimeExecutable": "/Users/aruzhanbaiseit/.nvm/versions/node/v26.13.1/bin/npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "hangout-prod",
+      "runtimeExecutable": "/Users/aruzhanbaiseit/.nvm/versions/node/v26.13.1/bin/npm",
+      "runtimeArgs": ["run", "start", "--", "-p", "3001"],
+      "port": 3001
     }
   ]
 }

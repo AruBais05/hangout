@@ -3,36 +3,38 @@
 import { useSyncExternalStore } from "react";
 import type { SlotKey } from "./config";
 
-// Guest-only demo state, kept in localStorage. No accounts.
+// Guest-only demo state, kept in localStorage. No accounts, no money held.
 
 export type PassPlan = "monthly" | "yearly";
 
 export type DemoState = {
-  pass: { plan: PassPlan; startedAt: string } | null;
-  feeFreeUsed: number; // fee-free bookings used this month (Pass holders)
-  budgetCents: number | null;
+  pass: { plan: PassPlan; startedAt: string } | null; // Crew Pass
+  unlocked: boolean; // this big plan was unlocked with the one-time $4.99
+  budgetCents: number | null; // private
   vibe: "active" | "chill" | null;
   availability: SlotKey[];
   myVote: string | null;
   votingEnded: boolean;
   voteEndsAt: number | null; // epoch ms
-  paid: { totalCents: number; feeCents: number; at: string } | null;
+  imIn: boolean;
   checkedIn: boolean;
+  returnTo: string | null; // where to go after buying the Crew Pass
 };
 
-const KEY = "hangout-demo-v1";
+const KEY = "hangout-demo-v2";
 
 export const INITIAL: DemoState = {
   pass: null,
-  feeFreeUsed: 0,
+  unlocked: false,
   budgetCents: null,
   vibe: null,
   availability: [],
   myVote: null,
   votingEnded: false,
   voteEndsAt: null,
-  paid: null,
+  imIn: false,
   checkedIn: false,
+  returnTo: null,
 };
 
 let state: DemoState | null = null;
@@ -65,26 +67,18 @@ export function update(patch: Partial<DemoState> | ((s: DemoState) => Partial<De
   listeners.forEach((l) => l());
 }
 
-/** Starts the hangout over but keeps the Pass (used by "Plan another"). */
-export function restartHangout() {
-  update({
-    budgetCents: null,
-    vibe: null,
-    availability: [],
-    myVote: null,
-    votingEnded: false,
-    voteEndsAt: null,
-    paid: null,
-    checkedIn: false,
-  });
+/** Starts a new plan but keeps the Crew Pass. */
+export function restartPlan() {
+  const { pass } = load();
+  update({ ...INITIAL, pass });
 }
 
 export function resetDemo() {
   update({ ...INITIAL });
 }
 
-export function setPass(on: boolean, plan: PassPlan = "monthly") {
-  update(on ? { pass: { plan, startedAt: new Date().toISOString() }, feeFreeUsed: 0 } : { pass: null });
+export function setPass(on: boolean, plan: PassPlan = "yearly") {
+  update(on ? { pass: { plan, startedAt: new Date().toISOString() } } : { pass: null });
 }
 
 function subscribe(cb: () => void) {
@@ -106,4 +100,9 @@ function subscribe(cb: () => void) {
 export function useDemo(): [DemoState, boolean] {
   const s = useSyncExternalStore(subscribe, load, () => null);
   return s ? [s, true] : [INITIAL, false];
+}
+
+/** True when this plan's big-plan features are open (unlocked once, or Crew Pass). */
+export function isOpen(s: DemoState): boolean {
+  return s.unlocked || !!s.pass;
 }

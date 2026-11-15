@@ -1,0 +1,74 @@
+.tiers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.tier {
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+  background: var(--lilac-2);
+  display: grid;
+  gap: 6px;
+}
+
+.highlight {
+  background: var(--purple);
+  color: var(--white);
+}
+
+.tierHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.tierName {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.tierPrice {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.2rem;
+  white-space: nowrap;
+}
+
+.note {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.highlight .note {
+  color: var(--lilac);
+}
+
+.features {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+}
+
+.features li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.features svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--purple);
+}
+
+.highlight .features svg {
+  color: var(--white);
+}

@@ -11,10 +11,10 @@ export const STEPS = [
   "/demo",
   "/demo/quiz",
   "/demo/dates",
-  "/demo/group",
+  "/demo/unlock",
   "/demo/options",
   "/demo/vote",
-  "/demo/pay",
+  "/demo/in",
   "/demo/booked",
   "/demo/checkin",
   "/demo/recap",
@@ -43,7 +43,7 @@ export default function DemoShell({ children }: { children: React.ReactNode }) {
               aria-checked={hasPass}
               onClick={() => setPass(!hasPass)}
               disabled={!ready}
-              title="Demo toggle: switch the Pass on or off"
+              title="Demo toggle: switch the Crew Pass on or off"
             >
               <span className={styles.knob} aria-hidden="true" />
               <span>{hasPass ? "Has pass" : "No pass"}</span>

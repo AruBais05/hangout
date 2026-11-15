@@ -104,7 +104,32 @@
   font-weight: 600;
 }
 
-.inline {
-  color: var(--purple);
-  font-weight: 600;
+.range {
+  background: var(--purple-deep);
+  color: var(--white);
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+}
+
+.rangeLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--purple-soft);
+}
+
+.rangeValue {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-stretch: 108%;
+  font-size: 1.7rem;
+  line-height: 1.1;
+  margin: 4px 0;
+}
+
+.rangeNote {
+  color: var(--lilac);
+  font-size: 0.92rem;
 }
