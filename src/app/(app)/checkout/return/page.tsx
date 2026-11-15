@@ -7,7 +7,8 @@ import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import styles from "@/components/demo/Checkout.module.css";
 import { formatCents } from "@/lib/money";
-import { setPass, update, useDemo } from "@/lib/store";
+import { activatePass } from "@/lib/auth";
+import { update, useDemo } from "@/lib/store";
 
 type Result =
   | { status: "checking" }
@@ -21,7 +22,7 @@ async function verify(): Promise<Result> {
   const d = await res.json();
   if (!res.ok) return { status: "failed", message: d.error ?? "Stripe couldn't confirm the payment." };
   if (!d.paid) return { status: "failed", message: "The payment didn't go through. Nothing was charged." };
-  if (d.item === "pass") setPass(true, d.plan);
+  if (d.item === "pass") activatePass();
   else update({ unlocked: true });
   return { status: "paid", item: d.item, amountCents: d.amountCents, taxCents: d.taxCents };
 }

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
-import { PERSONALITIES, ROOM_CODE } from "@/lib/config";
+import { PERSONALITIES } from "@/lib/config";
+import { inviteUrl } from "@/lib/invite";
 import PlaceMap from "@/components/PlaceMap";
 import {
   crewOf,
@@ -67,18 +68,25 @@ export default function Room() {
     return () => clearInterval(t);
   }, [active, crew.length]);
 
-  async function copyInvite() {
-    const link = `${window.location.origin}/join`;
+  // The link carries the group's details, so it works on a friend's phone with no account.
+  const host = state.me.name || state.profile?.name || "";
+  async function shareInvite() {
+    const link = inviteUrl(window.location.origin, m, host, state.groupQuiz);
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Join my hangout", url: link });
+        await navigator.share({ title: `${host || "A friend"} invited you to hang out`, url: link });
         return;
       }
       await navigator.clipboard.writeText(link);
-      setMsg("Invite link copied.");
-    } catch {
-      setMsg(`Invite link: ${link}`);
+      setMsg("Invite link copied. Paste it in your group chat.");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return; // closed the share sheet
+      setMsg("Couldn't copy here. Use Open the invite and copy the address bar.");
     }
+  }
+
+  function openInvite() {
+    window.open(inviteUrl(window.location.origin, m, host, state.groupQuiz), "_blank", "noopener");
   }
 
   const next = big && !state.unlocked && !state.pass ? "/room/unlock" : "/room/ideas";
@@ -101,10 +109,16 @@ export default function Room() {
         <h2 id="invite-title" className={styles.inviteLabel}>
           Invite link
         </h2>
-        <p className={styles.link}>hangout.app/join/{ROOM_CODE}</p>
-        <button type="button" className={s.secondary} onClick={copyInvite}>
+        <p className={styles.link}>
+          {purposeOf(m).label} · {m.city}
+        </p>
+        <button type="button" className={s.secondary} onClick={shareInvite}>
           <Icon name="share" size={18} />
           Share invite
+        </button>
+        <button type="button" className={s.textLink} onClick={openInvite}>
+          Open the invite
+          <span className="visually-hidden">(opens in a new tab)</span>
         </button>
         <p className={s.status} aria-live="polite">
           {msg}

@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import { DEMO_CARD, PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
-import { setPass, update, useDemo, type PassPlan } from "@/lib/store";
+import { activatePass } from "@/lib/auth";
+import { update, useDemo, type PassPlan } from "@/lib/store";
 import s from "./screen.module.css";
 import styles from "./Checkout.module.css";
 
@@ -117,7 +118,7 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
     // Mock payment: nothing leaves the browser.
     setTimeout(() => {
       if (item === "unlock") update({ unlocked: true });
-      else setPass(true, plan);
+      else activatePass();
       setPaying(false);
       setDone(true);
     }, 1200);

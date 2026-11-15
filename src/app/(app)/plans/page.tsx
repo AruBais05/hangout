@@ -56,7 +56,7 @@ export default function Plans() {
             Manage Crew Pass
           </Link>
         ) : (
-          <Link href="/pass" className={s.primary}>
+          <Link href={state.session ? "/pass" : "/signup"} className={s.primary}>
             Get Crew Pass – {formatPrice(PRICES.passYearlyCents)}/year
           </Link>
         )}

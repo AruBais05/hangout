@@ -99,3 +99,29 @@
   outline: 3px solid var(--ink);
   outline-offset: 1px;
 }
+
+.savedGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.savedGrid label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.savedGrid input,
+.savedGrid select {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--white);
+  font: inherit;
+  font-weight: 500;
+  min-width: 0;
+}

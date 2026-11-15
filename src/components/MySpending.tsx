@@ -30,7 +30,7 @@ export default function MySpending() {
   const locked = !state.pass;
 
   return (
-    <section className={s.cardLine} aria-labelledby="spend-title">
+    <section id="spending" className={s.cardLine} aria-labelledby="spend-title">
       <h2 id="spend-title" className={s.label}>
         My spending <span className={styles.private}>Only you see this</span>
       </h2>

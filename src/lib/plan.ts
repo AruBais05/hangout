@@ -246,7 +246,8 @@ export function personalityOf(answers: Record<number, number>, questions: QuizQu
   return TYPE_ORDER.reduce((a, b) => (score[b] > score[a] ? b : a), TYPE_ORDER[0]);
 }
 
-export const myType = (s: DemoState) => personalityOf(s.answers, quizOf(s));
+export const myType = (s: DemoState) =>
+  Object.keys(s.answers).length === 0 && s.me.type ? s.me.type : personalityOf(s.answers, quizOf(s));
 
 export function groupMix(s: DemoState): { type: Personality; count: number }[] {
   const m = meetingOf(s);

@@ -7,6 +7,8 @@ import s from "@/components/demo/screen.module.css";
 import { PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
 import { cleanHandle } from "@/lib/split";
+import { BUDGET_RANGES, TRAVEL_MINUTES, type BudgetRangeId, type TravelMinutes } from "@/lib/config";
+import { cancelPass, currentAccount, forgetProfile, logOut, saveProfile } from "@/lib/auth";
 import { resetDemo, setPass, update, useDemo } from "@/lib/store";
 import styles from "./settings.module.css";
 
@@ -21,10 +23,113 @@ export default function Settings() {
   const [confirming, setConfirming] = useState(false);
   const [msg, setMsg] = useState("");
   const pass = state.pass;
+  const account = currentAccount(state);
+  const profile = state.profile;
 
   return (
     <div className={s.screen}>
       <h1 className={s.title}>Settings</h1>
+
+      <section className={s.cardLine} aria-labelledby="account-title">
+        <h2 id="account-title" className={s.label}>
+          Account
+        </h2>
+        {account ? (
+          <>
+            <dl className={styles.rows}>
+              <div>
+                <dt>Name</dt>
+                <dd>{account.name}</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{account.google ? "Google (demo)" : account.email}</dd>
+              </div>
+              <div>
+                <dt>Plan</dt>
+                <dd>{account.crewPass ? "Crew Pass" : "Free"}</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              className={s.secondary}
+              onClick={() => {
+                logOut();
+                setMsg("Logged out. Crew Pass features are off until you log in again.");
+              }}
+            >
+              Log out
+            </button>
+          </>
+        ) : (
+          <p className={s.small}>
+            <Link href="/login" className={s.textLink}>
+              Log in
+            </Link>{" "}
+            or{" "}
+            <Link href="/signup" className={s.textLink}>
+              create an account
+            </Link>{" "}
+            to keep Crew Pass and your info everywhere.
+          </p>
+        )}
+        <p className={s.small}>Demo account, saved in this browser. Passwords are stored only as a hash.</p>
+      </section>
+
+      <section className={s.cardLine} aria-labelledby="saved-title">
+        <h2 id="saved-title" className={s.label}>
+          Your saved info
+        </h2>
+        {profile ? (
+          <>
+            <div className={styles.savedGrid}>
+              <label>
+                <span>First name</span>
+                <input value={profile.name} maxLength={20} onChange={(e) => saveProfile({ ...profile, name: e.target.value })} />
+              </label>
+              <label>
+                <span>Travel</span>
+                <select value={profile.travel} onChange={(e) => saveProfile({ ...profile, travel: Number(e.target.value) as TravelMinutes })}>
+                  {TRAVEL_MINUTES.map((m) => (
+                    <option key={m} value={m}>
+                      Up to {m} min
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Budget (private)</span>
+                <select value={profile.budget ?? ""} onChange={(e) => saveProfile({ ...profile, budget: (e.target.value || null) as BudgetRangeId | null })}>
+                  {BUDGET_RANGES.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Venmo</span>
+                <input value={profile.venmo} maxLength={30} placeholder="username" onChange={(e) => saveProfile({ ...profile, venmo: cleanHandle(e.target.value) })} />
+              </label>
+            </div>
+            <p className={s.small}>
+              {profile.area ? `Area: ${profile.area}. ` : ""}Used to join hangouts in one tap. Saved on this device only.
+            </p>
+            <button
+              type="button"
+              className={s.secondary}
+              onClick={() => {
+                forgetProfile();
+                setMsg("Forgotten. Your info is no longer saved on this device.");
+              }}
+            >
+              Forget me
+            </button>
+          </>
+        ) : (
+          <p className={s.small}>Nothing saved yet. Your answers are saved here after you join a hangout.</p>
+        )}
+      </section>
 
       <section className={s.cardLine} aria-labelledby="pass-title">
         <h2 id="pass-title" className={s.label}>
@@ -54,7 +159,7 @@ export default function Settings() {
                     type="button"
                     className={styles.danger}
                     onClick={() => {
-                      setPass(false);
+                      cancelPass();
                       setConfirming(false);
                       setMsg("Crew Pass cancelled.");
                     }}
@@ -102,10 +207,8 @@ export default function Settings() {
 
       <MySpending />
 
-      <section className={s.card} aria-labelledby="demo-title">
-        <h2 id="demo-title" className={s.label}>
-          Demo controls
-        </h2>
+      <details className={s.card}>
+        <summary className={s.label}>For judges: demo switches</summary>
         <div className={styles.toggleRow}>
           <span id="pass-label">Crew Pass</span>
           <div className={styles.segment} role="radiogroup" aria-labelledby="pass-label">
@@ -145,7 +248,7 @@ export default function Settings() {
         >
           Reset demo
         </button>
-      </section>
+      </details>
 
       <p className={s.status} aria-live="polite">
         {msg}

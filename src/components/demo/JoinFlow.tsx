@@ -5,26 +5,32 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import LocationPicker, { type Picked } from "@/components/LocationPicker";
-import { BUDGET_RANGES, DEAL_BREAKERS, PEOPLE, PERSONALITIES, SLOTS, SLOT_HOURS, TRAVEL_MINUTES, type QuizQuestion, type TravelMinutes } from "@/lib/config";
+import { BUDGET_RANGES, DEAL_BREAKERS, DEMO_QUIZ, PEOPLE, PERSONALITIES, SLOTS, SLOT_HOURS, TRAVEL_MINUTES, type QuizQuestion, type TravelMinutes } from "@/lib/config";
 import { calendarBusy, cellKey, dayLabel, days, meetingOf, personalityOf, purposeOf, quizOf } from "@/lib/plan";
-import { update, useDemo, type CellState, type Me } from "@/lib/store";
+import { forgetProfile, saveProfile } from "@/lib/auth";
+import { decodeInvite, type Invite } from "@/lib/invite";
+import { cleanHandle } from "@/lib/split";
+import { EMPTY_ME, update, useDemo, type CellState, type Me } from "@/lib/store";
 import s from "./screen.module.css";
 import styles from "./JoinFlow.module.css";
 
 // Fixed questions (ours, never the AI's): name, location + travel, budget, deal-breakers.
 // Then the group's 5 personality questions (AI-written when available, the same for everyone).
 const FIXED = ["name", "where", "budget", "deal"] as const;
+const SAVED_NOTE = "Saved on this device only. Create an account to keep it everywhere.";
 type Fixed = (typeof FIXED)[number];
-type Step = { kind: "times" } | { kind: "fixed"; id: Fixed } | { kind: "q"; i: number } | { kind: "result" };
+type Step = { kind: "welcome" } | { kind: "times" } | { kind: "fixed"; id: Fixed } | { kind: "q"; i: number } | { kind: "result" };
 
 /** Waits for saved demo state, so a returning user's answers are filled in. */
 export default function JoinFlow({ guest = false }: { guest?: boolean }) {
   const [state, ready] = useDemo();
   if (!ready) return <div className={s.screen} aria-busy="true" />;
-  // An invite can't add a 51st person, or anyone once every seat is taken.
+  // Guests: the invite link carries the group (?g=...). Read only after hydration, in the browser.
+  const invite = guest ? decodeInvite(new URLSearchParams(window.location.search).get("g")) : null;
+  // An invite can't add a 51st person, or anyone once every seat is taken (on this device).
   const m = meetingOf(state);
   const taken = state.crewJoined + (state.joined ? 1 : 0);
-  if (guest && state.meeting && taken >= Math.min(m.people, PEOPLE.max)) {
+  if (guest && !invite && state.meeting && taken >= Math.min(m.people, PEOPLE.max)) {
     return (
       <div className={s.screen}>
         <h1 className={s.title}>This hangout is full</h1>
@@ -39,20 +45,25 @@ export default function JoinFlow({ guest = false }: { guest?: boolean }) {
       </div>
     );
   }
-  return <Flow guest={guest} />;
+  return <Flow guest={guest} invite={invite} />;
 }
 
-function Flow({ guest }: { guest: boolean }) {
+function Flow({ guest, invite }: { guest: boolean; invite: Invite | null }) {
   const router = useRouter();
   const [state] = useDemo();
-  const m = meetingOf(state);
+  const m = invite?.meeting ?? meetingOf(state);
   const dayList = days(m.from, m.to);
   // Locked when the personality part starts, so a late AI quiz can't swap questions mid-way.
   const [locked, setLocked] = useState<QuizQuestion[] | null>(null);
-  const questions = locked ?? quizOf(state);
-  const aiWritten = state.groupQuiz?.source === "ai";
+  const groupQuiz = invite ? invite.quiz : state.groupQuiz;
+  const questions = locked ?? (invite ? (invite.quiz?.questions ?? DEMO_QUIZ) : quizOf(state));
+  const aiWritten = groupQuiz?.source === "ai";
 
-  const [step, setStep] = useState<Step>({ kind: "times" });
+  // A returning friend (saved profile on this device) gets "Welcome back" and joins in one tap.
+  const saved = state.profile;
+  const [step, setStep] = useState<Step>(saved ? { kind: "welcome" } : { kind: "times" });
+  const [quick, setQuick] = useState(false); // joining with the saved profile: only times are asked
+  const [venmo, setVenmo] = useState(saved?.venmo ?? state.venmoHandle);
   const [cells, setCells] = useState<Record<string, CellState>>({});
   const [calCells, setCalCells] = useState<string[]>([]);
   const [busyLabels, setBusyLabels] = useState<Record<string, string>>({});
@@ -116,7 +127,7 @@ function Flow({ guest }: { guest: boolean }) {
 
   function nextFrom(id: Fixed) {
     const i = FIXED.indexOf(id);
-    if (i + 1 >= FIXED.length) setLocked(quizOf(state));
+    if (i + 1 >= FIXED.length) setLocked(questions);
     go(i + 1 < FIXED.length ? { kind: "fixed", id: FIXED[i + 1] } : { kind: "q", i: 0 });
   }
 
@@ -147,13 +158,26 @@ function Flow({ guest }: { guest: boolean }) {
   }
 
   function finish(final: Record<number, number>) {
+    const type = quick && saved ? saved.type : personalityOf(final, questions);
+    const name = firstName.slice(0, 20);
+    // Remember this person on this device, so next time they can join in one tap.
+    saveProfile({
+      name,
+      point: me.point,
+      area: me.area,
+      travel: me.travel,
+      budget: me.budget,
+      dealBreakers: me.dealBreakers,
+      type,
+      venmo: cleanHandle(venmo),
+    });
     if (!guest) {
       update({
         cells,
         calCells,
         calConnected: connected,
         answers: final,
-        me: { ...me, name: firstName.slice(0, 20) },
+        me: { ...me, name, type },
         meeting: { ...m, city: city.name, center: city.center },
         joined: true,
       });
@@ -180,9 +204,68 @@ function Flow({ guest }: { guest: boolean }) {
     </button>
   );
 
+  /* ---------- welcome back ---------- */
+  if (step.kind === "welcome" && saved) {
+    const budget = BUDGET_RANGES.find((b) => b.id === saved.budget)?.label;
+    return (
+      <div className={s.screen}>
+        <div>
+          <h1 className={s.title}>Welcome back, {saved.name} 👋</h1>
+          <p className={s.lede} style={{ marginTop: 8 }}>
+            We kept your answers. Just pick your free times for {purposeOf(m).label.toLowerCase()} in {m.city}.
+          </p>
+        </div>
+        <ul className={s.chips} aria-label="Your saved info">
+          <li className={s.chipYellow}>{PERSONALITIES[saved.type].name}</li>
+          {saved.area && <li className={s.chip}>{saved.area}</li>}
+          <li className={s.chip}>Up to {saved.travel} min away</li>
+          {budget && <li className={s.chip}>{budget}</li>}
+          {saved.venmo && <li className={s.chip}>@{saved.venmo}</li>}
+        </ul>
+        <p className={s.small}>{SAVED_NOTE}</p>
+        <div className={s.actions}>
+          <button
+            type="button"
+            className={s.primary}
+            onClick={() => {
+              setMe((x) => ({
+                ...x,
+                name: saved.name,
+                point: saved.point,
+                area: saved.area,
+                travel: saved.travel,
+                budget: saved.budget,
+                dealBreakers: saved.dealBreakers,
+                type: saved.type,
+              }));
+              setVenmo(saved.venmo);
+              setQuick(true);
+              go({ kind: "times" });
+            }}
+          >
+            Join as {saved.name}
+          </button>
+          <button
+            type="button"
+            className={s.textLink}
+            onClick={() => {
+              forgetProfile();
+              setMe(EMPTY_ME);
+              setVenmo("");
+              setQuick(false);
+              go({ kind: "times" });
+            }}
+          >
+            Not you?
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   /* ---------- result ---------- */
   if (step.kind === "result") {
-    const type = PERSONALITIES[personalityOf(answers, questions)];
+    const type = PERSONALITIES[quick && saved ? saved.type : personalityOf(answers, questions)];
     return (
       <div className={s.screen}>
         <section className={styles.result} role="status">
@@ -195,7 +278,7 @@ function Flow({ guest }: { guest: boolean }) {
         </p>
         <p className={s.lede}>
           {guest
-            ? "You're in. The host will share the plan when everyone has joined."
+            ? "You're in. In this demo your answers stay on this phone; the real app sends them to the group."
             : "Your times and answers are saved. Your budget stays private."}
         </p>
         <div className={s.actions}>
@@ -261,6 +344,18 @@ function Flow({ guest }: { guest: boolean }) {
           />
         </label>
         <p className={s.small}>Friends see this name on the plan. Up to 20 letters.</p>
+        <label className={styles.field}>
+          <span>Your Venmo (optional)</span>
+          <input
+            type="text"
+            value={venmo}
+            maxLength={31}
+            placeholder="@username, so friends can pay you back"
+            autoComplete="off"
+            onChange={(e) => setVenmo(e.target.value)}
+          />
+        </label>
+        <p className={s.small}>{SAVED_NOTE}</p>
         <div className={s.actions}>
           <button type="submit" className={s.primary} disabled={!firstName}>
             Next
@@ -382,7 +477,7 @@ function Flow({ guest }: { guest: boolean }) {
   return (
     <div className={s.screen}>
       <div>
-        <h1 className={s.title}>{guest ? "You're invited" : "When are you free?"}</h1>
+        <h1 className={s.title}>{guest ? (invite?.host ? `${invite.host} invited you` : "You're invited") : "When are you free?"}</h1>
         <p className={s.lede} style={{ marginTop: 8 }}>
           {guest
             ? `${purposeOf(m).label} in ${m.city}. Tap the times you're free, then take a 1-minute quiz.`
@@ -451,9 +546,9 @@ function Flow({ guest }: { guest: boolean }) {
           type="button"
           className={s.primary}
           disabled={freeCount === 0}
-          onClick={() => go({ kind: "fixed", id: "name" })}
+          onClick={() => (quick ? finish({}) : go({ kind: "fixed", id: "name" }))}
         >
-          Next: quick quiz
+          {quick ? `Join as ${firstName}` : "Next: quick quiz"}
         </button>
         <p className={s.small} aria-live="polite">
           {freeCount === 0

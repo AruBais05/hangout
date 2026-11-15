@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { BudgetRangeId, GroupQuiz, PurposeId, TravelMinutes, Vibe } from "./config";
+import type { BudgetRangeId, GroupQuiz, Personality, PurposeId, TravelMinutes, Vibe } from "./config";
 import type { SuggestResult } from "./suggest";
 
 // Guest-only demo state, kept in localStorage. No accounts, no money held.
@@ -28,6 +28,32 @@ export type Me = {
   travel: TravelMinutes;
   budget: BudgetRangeId | null; // private
   dealBreakers: string[];
+  type?: Personality; // from a saved profile, when the quiz was skipped ("Join as Dana")
+};
+
+/** What a returning friend doesn't have to type again. Saved on this device only. */
+export type Profile = {
+  name: string;
+  point: [number, number] | null; // rounded to about 1 km
+  area: string;
+  travel: TravelMinutes;
+  budget: BudgetRangeId | null;
+  dealBreakers: string[];
+  type: Personality;
+  venmo: string;
+};
+
+/** Demo account, saved in this browser. The password is only ever stored as a salted SHA-256 hash. */
+export type Account = {
+  id: string;
+  name: string;
+  email: string;
+  salt: string;
+  hash: string; // "" for "Continue with Google" (demo)
+  google: boolean;
+  crewPass: boolean;
+  profile: Profile | null;
+  createdAt: string;
 };
 
 export type DemoState = {
@@ -54,6 +80,9 @@ export type DemoState = {
   expenses: Expense[]; // Crew Pass cost split
   settled: string[]; // "from>to" debts marked as paid
   spentThisMonth: number; // cents you paid this month (shares + expenses), for My spending
+  profile: Profile | null; // remembered free-user profile, this device only
+  accounts: Account[];
+  session: string | null; // logged-in account id
   crewAreas: Record<string, string>; // "city|memberId" → neighborhood name
 };
 
@@ -87,13 +116,16 @@ export const INITIAL: DemoState = {
   expenses: [],
   settled: [],
   spentThisMonth: 0,
+  profile: null,
+  accounts: [],
+  session: null,
   crewAreas: {},
 };
 
 let state: DemoState | null = null;
 const listeners = new Set<() => void>();
 
-function load(): DemoState {
+export function load(): DemoState {
   if (state) return state;
   try {
     const raw = window.localStorage.getItem(KEY);
@@ -122,8 +154,19 @@ export function update(patch: Partial<DemoState> | ((s: DemoState) => Partial<De
 
 /** Starts a new meeting but keeps the Crew Pass, your Venmo, your spending and known neighborhoods. */
 export function newMeeting(meeting: Meeting, groupQuiz: GroupQuiz, venmoHandle?: string) {
-  const { pass, crewAreas, spentThisMonth, venmoHandle: prev } = load();
-  update({ ...INITIAL, pass, crewAreas, spentThisMonth, venmoHandle: venmoHandle ?? prev, meeting, groupQuiz });
+  const { pass, crewAreas, spentThisMonth, venmoHandle: prev, profile, accounts, session } = load();
+  update({
+    ...INITIAL,
+    pass,
+    crewAreas,
+    spentThisMonth,
+    profile,
+    accounts,
+    session,
+    venmoHandle: venmoHandle ?? prev,
+    meeting,
+    groupQuiz,
+  });
 }
 
 export function resetDemo() {

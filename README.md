@@ -28,6 +28,16 @@ Website and clickable demo for Hangout: turn "we should hang out" into a plan.
 All prices, rules, AI settings, partners, sample plans, quizzes and the demo crew live in
 `src/lib/config.ts`. Money is integer cents.
 
+## Accounts and invites (browser-only demo)
+
+- **Invite links** carry the group (purpose, dates, size, city, vibe, host's first name, AI quiz) in
+  `?g=`, so they open on a friend's phone with no server. In the demo, a friend's answers stay on their device.
+- **Free users** get a remembered profile on their device after their first join ("Welcome back, Dana",
+  one-tap "Join as Dana", "Not you?"). Edit or "Forget me" in Settings.
+- **Crew Pass** needs an account: sign-up (or demo-only "Continue with Google"), then Stripe test checkout.
+  Accounts live in localStorage; passwords are stored only as a salted SHA-256 hash (crypto.subtle).
+  Logged-out Pass users fall back to free features. A demo switch for judges is in Settings.
+
 ## AI
 
 - Provider is a switch in `src/lib/config.ts` (`AI.provider`: `groq`, `gemini` or `anthropic`).

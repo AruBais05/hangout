@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import { useEffect } from "react";
 import { isBig, meetingOf, needsUnlock } from "@/lib/plan";
-import { setPass, useDemo } from "@/lib/store";
+import AccountMenu from "@/components/AccountMenu";
+import { useDemo } from "@/lib/store";
 import styles from "./AppShell.module.css";
 
 const ALL_STEPS = [
@@ -30,7 +31,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const big = isBig(meetingOf(state));
   const steps = ALL_STEPS.filter((s) => !s.big || big);
   const index = steps.findIndex((s) => s.path === pathname);
-  const hasPass = !!state.pass;
 
   // Big plans pay first: every planning page after setup sends you to the unlock until it's paid.
   const locked =
@@ -48,21 +48,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           hangout
         </Link>
         <div className={styles.tools}>
-          <button
-            type="button"
-            className={`${styles.passToggle} ${hasPass ? styles.on : ""}`}
-            role="switch"
-            aria-checked={hasPass}
-            onClick={() => setPass(!hasPass)}
-            disabled={!ready}
-            title="Demo switch: Crew Pass on or off"
-          >
-            <span className={styles.knob} aria-hidden="true" />
-            <span>{hasPass ? "Has pass" : "No pass"}</span>
-          </button>
-          <Link href="/settings" className={styles.iconLink} aria-label="Settings">
-            <Icon name="settings" size={20} />
-          </Link>
+          <AccountMenu />
         </div>
       </header>
 
