@@ -37,7 +37,7 @@ export default function Vote() {
     };
   }, [ended, state.voteEndsAt]);
 
-  const next = isBig(m) ? "/room/in" : "/room/plan";
+  const next = isBig(m) ? "/room/in" : "/room/pay";
 
   return (
     <div className={s.screen}>
@@ -93,7 +93,7 @@ export default function Vote() {
       <div className={s.actions}>
         {ended ? (
           <Link href={next} className={s.primary}>
-            {isBig(m) ? "Ask who's really in" : "Lock the plan"}
+            {isBig(m) ? "Ask who's really in" : "Lock it and pay my share"}
           </Link>
         ) : (
           <button type="button" className={s.primary} onClick={() => update({ votingEnded: true })}>

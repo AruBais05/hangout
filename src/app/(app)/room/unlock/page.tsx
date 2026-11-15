@@ -5,15 +5,14 @@ import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { PLAN_FEATURES, PRICES } from "@/lib/config";
 import { formatCents, formatPrice, splitCost } from "@/lib/money";
-import { bigReasons, meetingOf, rankIdeas } from "@/lib/plan";
+import { bestCell, bigReasons, meetingOf } from "@/lib/plan";
 import { update, useDemo } from "@/lib/store";
 import styles from "./unlock.module.css";
 
 export default function Unlock() {
   const [state] = useDemo();
   const m = meetingOf(state);
-  const ideas = rankIdeas(state);
-  const allFree = ideas[0] && ideas[0].free >= m.people;
+  const allFree = bestCell(state).free >= m.people;
   const unlockEach = splitCost(0, PRICES.unlockCents, m.people).unlockEachCents;
 
   if (state.pass || state.unlocked) {
@@ -49,7 +48,7 @@ export default function Unlock() {
       <section className={s.cardInk} aria-labelledby="found">
         <p id="found" className={styles.found}>
           Hangout found {allFree ? "a time all" : "the best time for"} {m.people} of you
-          {allFree ? " can make" : ""}, and {ideas.length} ideas that fit the group.
+          {allFree ? " can make" : ""}, and AI-planned ideas that fit the group.
         </p>
         <p className={styles.locked}>
           <Icon name="lock" size={16} />

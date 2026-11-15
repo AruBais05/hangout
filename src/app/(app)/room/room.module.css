@@ -91,3 +91,8 @@
   font-weight: 700;
   font-size: 0.88rem;
 }
+
+.mapSection {
+  display: grid;
+  gap: 10px;
+}

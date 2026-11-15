@@ -1,12 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Icon from "@/components/Icon";
+import MapLinks from "@/components/MapLinks";
+import PlaceMap, { type MapPin } from "@/components/PlaceMap";
 import s from "@/components/demo/screen.module.css";
-import { PRICES } from "@/lib/config";
-import { formatCents, splitCost } from "@/lib/money";
-import { crewOf, downloadIcs, googleCalendarUrl, isBig, meetingOf, rankIdeas, winnerOf } from "@/lib/plan";
+import { formatCents } from "@/lib/money";
+import {
+  crewOf,
+  downloadIcs,
+  googleCalendarUrl,
+  groupMidpoint,
+  meetingOf,
+  placePoint,
+  rankIdeas,
+  shareBreakdown,
+  winnerOf,
+} from "@/lib/plan";
 import { useDemo } from "@/lib/store";
 import styles from "./plan.module.css";
 
@@ -14,22 +25,31 @@ export default function Plan() {
   const [state] = useDemo();
   const m = meetingOf(state);
   const crew = crewOf(m);
-  const big = isBig(m);
   const idea = winnerOf(state, rankIdeas(state));
-  const venueCents = idea.eachCents * m.people;
-  const unlockCents = big && !state.pass ? PRICES.unlockCents : 0;
-  const split = splitCost(venueCents, unlockCents, m.people);
-  const [msg, setMsg] = useState("");
+  const b = shareBreakdown(state, idea);
+  const known = placePoint(m, idea);
+  const [found, setFound] = useState<{ q: string; point: [number, number] | null } | null>(null);
+  const q = `${idea.neighborhood}`;
 
-  async function copyLinks() {
-    const lines = crew.map((c) => `${c.name}: https://hangout.app/settle/${c.id}-${split.eachCents}`).join("\n");
-    try {
-      await navigator.clipboard.writeText(lines);
-      setMsg(`${crew.length} settle-up links copied.`);
-    } catch {
-      setMsg("Copy didn't work here. Links are sent in the group chat.");
-    }
-  }
+  // Partner venues have coordinates. Other plans: look up the neighborhood once (server-cached).
+  useEffect(() => {
+    if (known) return;
+    let alive = true;
+    fetch(`/api/geo?q=${encodeURIComponent(q)}&near=${encodeURIComponent(m.city)}`)
+      .then((r) => r.json())
+      .then((r) => {
+        const hit = r.results?.[0];
+        if (alive) setFound({ q, point: hit ? [hit.lat, hit.lng] : null });
+      })
+      .catch(() => alive && setFound({ q, point: null }));
+    return () => {
+      alive = false;
+    };
+  }, [known, q, m.city]);
+
+  const point = known ?? (found?.q === q ? found.point : null);
+  const pins: MapPin[] = point ? [{ id: idea.id, kind: "chosen", lat: point[0], lng: point[1], label: `${idea.title} · ${idea.place}`, text: "★" }] : [];
+  const paidCount = 2; // demo: two friends have paid so far
 
   return (
     <div className={s.screen}>
@@ -42,87 +62,75 @@ export default function Plan() {
         </h2>
         <p className={styles.where}>
           <Icon name="pin" size={18} />
-          {idea.place}, {idea.area}
+          {idea.place}, {m.city}
         </p>
+        <ol className={styles.steps}>
+          {idea.steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
         <p className={styles.going}>{m.people} going</p>
       </section>
 
-      {big ? (
-        <div className={s.split}>
-          <section className={styles.bill} aria-labelledby="split-title">
-            <h2 id="split-title" className="visually-hidden">
-              Cost split
-            </h2>
-            <dl>
-              <div>
-                <dt>
-                  {idea.title}, {m.people} people
-                </dt>
-                <dd className={s.money}>{formatCents(venueCents)}</dd>
-              </div>
-              <div>
-                <dt>Big Plan unlock</dt>
-                <dd className={s.money}>{state.pass ? "$0.00 with Crew Pass" : formatCents(unlockCents)}</dd>
-              </div>
-              <div className={styles.total}>
-                <dt>Each friend pays you</dt>
-                <dd className={s.money}>{formatCents(split.eachCents)}</dd>
-              </div>
-            </dl>
-          </section>
+      <section aria-labelledby="map-title" className={styles.mapSection}>
+        <h2 id="map-title" className={s.label}>
+          Where it is
+        </h2>
+        <PlaceMap
+          pins={pins}
+          midpoint={groupMidpoint(state)}
+          label={`Map: ${idea.place} in ${m.city}, and the middle of the group`}
+          embedTarget={{ searchHint: idea.searchHint, city: m.city }}
+        />
+        <MapLinks target={{ searchHint: idea.searchHint, city: m.city }} />
+      </section>
 
-          <section aria-labelledby="settle-title">
-            <h2 id="settle-title" className={styles.settleTitle}>
-              You booked {idea.place} directly. Everyone pays you back. Hangout never holds the money.
-            </h2>
-            <ul className={styles.people}>
-              {crew.map((c, i) => {
-                const paid = i < 2;
-                return (
-                  <li key={c.id}>
-                    <span className={paid ? styles.paid : styles.waiting} aria-hidden="true">
-                      {c.name[0]}
-                    </span>
-                    <span className={paid ? styles.paidLabel : s.small}>{paid ? "Paid" : "Waiting"}</span>
-                    <span className="visually-hidden">
-                      {c.name}: {paid ? "paid you back" : "hasn't paid yet"}
-                    </span>
-                  </li>
-                );
-              })}
-              <li>
-                <span className={styles.you} aria-hidden="true">
-                  Y
-                </span>
-                <span className={styles.paidLabel}>Booked</span>
-                <span className="visually-hidden">You booked and paid the venue</span>
-              </li>
-            </ul>
-            <button type="button" className={s.secondary} onClick={copyLinks}>
-              <Icon name="share" size={18} />
-              Copy settle-up links
-            </button>
-            <p className={s.status} aria-live="polite">
-              {msg}
-            </p>
-          </section>
-        </div>
+      {b.shareCents > 0 ? (
+        <section aria-labelledby="settle-title">
+          <h2 id="settle-title" className={styles.settleTitle}>
+            Everyone pays their own share: {formatCents(b.shareCents - b.discountCents)} plus the booking fee.
+          </h2>
+          <ul className={styles.people}>
+            <li>
+              <span className={state.paid ? styles.you : styles.waiting} aria-hidden="true">
+                {(state.me.name || "Y")[0]}
+              </span>
+              <span className={state.paid ? styles.paidLabel : s.small}>{state.paid ? "Paid" : "Waiting"}</span>
+              <span className="visually-hidden">You: {state.paid ? "paid" : "not paid yet"}</span>
+            </li>
+            {crew.map((c, i) => {
+              const paid = i < paidCount;
+              return (
+                <li key={c.id}>
+                  <span className={paid ? styles.paid : styles.waiting} aria-hidden="true">
+                    {c.name[0]}
+                  </span>
+                  <span className={paid ? styles.paidLabel : s.small}>{paid ? "Paid" : "Waiting"}</span>
+                  <span className="visually-hidden">
+                    {c.name}: {paid ? "paid" : "hasn't paid yet"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          {!state.paid && (
+            <Link href="/room/pay" className={s.textLink}>
+              Pay my share
+            </Link>
+          )}
+        </section>
       ) : (
         <p className={styles.freeNote}>
           <Icon name="check" size={18} />
           <span>
-            <strong>Free plan.</strong>{" "}
-            {idea.eachCents === 0
-              ? "This one costs nothing."
-              : `Everyone pays the venue on the day, about ${formatCents(idea.eachCents)} each.`}{" "}
-            Hangout never charges for everyday hangouts.
+            <strong>Free plan.</strong> Nothing to pay, and no booking fee.
           </span>
         </p>
       )}
 
       {idea.partner && (
         <p className={s.small}>
-          {idea.place} is a Hangout partner. They pay us a small commission. Your price is the same.
+          {idea.place} is a Hangout partner (demo data). Partner plans are 10% off for everyone.
         </p>
       )}
 

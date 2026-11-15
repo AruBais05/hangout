@@ -1,16 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
 import { PERSONALITIES, ROOM_CODE } from "@/lib/config";
-import { crewOf, groupMix, isBig, meetingOf, mixLabel, personalityOf, purposeOf, rangeLabel } from "@/lib/plan";
+import PlaceMap from "@/components/PlaceMap";
+import {
+  crewOf,
+  groupMix,
+  isBig,
+  meetingOf,
+  mixLabel,
+  crewPoint,
+  groupMidpoint,
+  myPoint,
+  myType,
+  purposeOf,
+  rangeLabel,
+} from "@/lib/plan";
 import { update, useDemo } from "@/lib/store";
 import styles from "./room.module.css";
 
 export default function Room() {
-  const [state] = useDemo();
+  const [state, ready] = useDemo();
   const m = meetingOf(state);
   const crew = crewOf(m);
   const joined = Math.min(state.crewJoined, crew.length);
@@ -19,6 +32,29 @@ export default function Room() {
   const inCount = joined + (state.joined ? 1 : 0);
   const allIn = inCount === m.people;
   const big = isBig(m);
+  const areaKey = (id: string) => `${m.city}|${id}`;
+
+  // Neighborhood names for the demo crew's rough areas (asked one at a time; the server caches them).
+  const asking = useRef<string | null>(null);
+  const missingIds = ready ? crew.filter((c) => !(areaKey(c.id) in state.crewAreas)).map((c) => c.id) : [];
+  const missingKey = missingIds.length ? `${m.city}|${missingIds.join(",")}` : "";
+  useEffect(() => {
+    if (!missingKey || asking.current === missingKey) return;
+    asking.current = missingKey;
+    (async () => {
+      for (const c of crew.filter((x) => missingIds.includes(x.id))) {
+        const [lat, lng] = crewPoint(m, c);
+        let area = "";
+        try {
+          const r = await fetch(`/api/geo?lat=${lat}&lng=${lng}`).then((x) => x.json());
+          area = r.area || "";
+        } catch {}
+        update((st) => ({ crewAreas: { ...st.crewAreas, [areaKey(c.id)]: area } }));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missingKey]);
+  const areaOf = (id: string) => state.crewAreas[areaKey(id)] || "Nearby";
 
   // Demo crew: friends join one at a time.
   const active = filling && joined < crew.length;
@@ -54,7 +90,9 @@ export default function Room() {
           <li className={s.chip}>{purposeOf(m).label}</li>
           <li className={s.chip}>{rangeLabel(m.from, m.to)}</li>
           <li className={s.chip}>{m.people} people</li>
+          <li className={s.chip}>{m.city}</li>
           <li className={big ? s.chipYellow : s.chip}>{big ? "Big plan" : "Free"}</li>
+          {state.pass && <li className={s.chipYellow}>Pass extras on</li>}
         </ul>
       </div>
 
@@ -85,15 +123,15 @@ export default function Room() {
         <ul className={s.list}>
           <li className={s.row}>
             <span className={state.joined ? s.avatarYou : s.avatarEmpty} aria-hidden="true">
-              Y
+              {(state.me.name || "Y")[0]}
             </span>
             <span className={s.grow}>
-              You, host
+              {state.joined ? `${state.me.name || "You"} · ${state.me.area || "Nearby"}` : "You, host"}
               <span className={s.sub}>
-                {state.joined ? "Times and quiz done" : "Add your times and take the quiz"}
+                {state.joined ? "Host. Times and quiz done" : "Add your times and take the quiz"}
               </span>
             </span>
-            {state.joined && <span className={s.chipYellow}>{PERSONALITIES[personalityOf(state.quiz)].name}</span>}
+            {state.joined && <span className={s.chipYellow}>{PERSONALITIES[myType(state)].name}</span>}
           </li>
           {crew.map((c, i) => {
             const here = i < joined;
@@ -103,7 +141,7 @@ export default function Room() {
                   {here ? c.name[0] : ""}
                 </span>
                 <span className={s.grow}>
-                  {here ? c.name : "Open seat"}
+                  {here ? `${c.name} · ${areaOf(c.id)}` : "Open seat"}
                   <span className={s.sub}>{here ? "Joined, added times, took the quiz" : "Waiting for someone to join"}</span>
                 </span>
                 {here && <span className={s.chip}>{PERSONALITIES[c.type].name}</span>}
@@ -134,6 +172,25 @@ export default function Room() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {allIn && (
+        <section aria-labelledby="map-title" className={styles.mapSection}>
+          <h2 id="map-title" className={s.label}>
+            Where everyone is, roughly
+          </h2>
+          <PlaceMap
+            pins={[
+              { id: "me", kind: "me", lat: myPoint(state)[0], lng: myPoint(state)[1], label: `${state.me.name || "You"} · ${state.me.area || "Nearby"}`, text: (state.me.name || "Y")[0] },
+              ...crew.map((c) => {
+                const [lat, lng] = crewPoint(m, c);
+                return { id: c.id, kind: "person" as const, lat, lng, label: `${c.name} · ${areaOf(c.id)}`, text: c.name[0] };
+              }),
+            ]}
+            midpoint={groupMidpoint(state)}
+            label={`Map of everyone's rough area in ${m.city}, and the middle of the group`}
+          />
         </section>
       )}
 

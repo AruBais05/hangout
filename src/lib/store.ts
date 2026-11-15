@@ -1,7 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { PurposeId } from "./config";
+import type { BudgetRangeId, GroupQuiz, PurposeId, TravelMinutes, Vibe } from "./config";
+import type { SuggestResult } from "./suggest";
 
 // Guest-only demo state, kept in localStorage. No accounts, no money held.
 
@@ -14,6 +15,19 @@ export type Meeting = {
   to: string;
   people: number;
   name: string;
+  vibe: Vibe;
+  city: string; // "Austin, TX"
+  center: [number, number]; // map center for the city; the demo crew sits around it
+};
+
+/** Your fixed answers. The point is rounded to about 1 km; others only see `area`. */
+export type Me = {
+  name: string;
+  point: [number, number] | null;
+  area: string;
+  travel: TravelMinutes;
+  budget: BudgetRangeId | null; // private
+  dealBreakers: string[];
 };
 
 export type DemoState = {
@@ -22,8 +36,9 @@ export type DemoState = {
   cells: Record<string, CellState>; // "YYYY-MM-DD|Slot" → state
   calCells: string[]; // cells filled by the demo calendar (cleared on disconnect)
   calConnected: boolean;
-  quiz: Record<string, string[]>; // question id → chosen labels
-  budgetCents: number | null; // private
+  groupQuiz: GroupQuiz | null; // the same questions for everyone in the group
+  answers: Record<number, number>; // question index → answer index
+  me: Me;
   joined: boolean; // you finished times + quiz
   pass: { plan: PassPlan; startedAt: string } | null;
   unlocked: boolean;
@@ -33,9 +48,15 @@ export type DemoState = {
   imIn: boolean;
   checkedIn: boolean;
   returnTo: string | null;
+  suggest: { key: string; result: SuggestResult } | null; // the plans on the voting screen
+  paid: { feeCents: number; totalCents: number } | null; // what you paid for your share
+  passBookings: { month: string; used: number }; // fee-free bookings used this month
+  crewAreas: Record<string, string>; // "city|memberId" → neighborhood name
 };
 
-const KEY = "hangout-demo-v3";
+export const EMPTY_ME: Me = { name: "", point: null, area: "", travel: 30, budget: null, dealBreakers: [] };
+
+const KEY = "hangout-demo-v4";
 
 export const INITIAL: DemoState = {
   meeting: null,
@@ -43,8 +64,9 @@ export const INITIAL: DemoState = {
   cells: {},
   calCells: [],
   calConnected: false,
-  quiz: {},
-  budgetCents: null,
+  groupQuiz: null,
+  answers: {},
+  me: EMPTY_ME,
   joined: false,
   pass: null,
   unlocked: false,
@@ -54,6 +76,10 @@ export const INITIAL: DemoState = {
   imIn: false,
   checkedIn: false,
   returnTo: null,
+  suggest: null,
+  paid: null,
+  passBookings: { month: "", used: 0 },
+  crewAreas: {},
 };
 
 let state: DemoState | null = null;
@@ -86,10 +112,10 @@ export function update(patch: Partial<DemoState> | ((s: DemoState) => Partial<De
   listeners.forEach((l) => l());
 }
 
-/** Starts a new meeting but keeps the Crew Pass. */
-export function newMeeting(meeting: Meeting) {
-  const { pass } = load();
-  update({ ...INITIAL, pass, meeting });
+/** Starts a new meeting but keeps the Crew Pass, its monthly count and known neighborhoods. */
+export function newMeeting(meeting: Meeting, groupQuiz: GroupQuiz) {
+  const { pass, passBookings, crewAreas } = load();
+  update({ ...INITIAL, pass, passBookings, crewAreas, meeting, groupQuiz });
 }
 
 export function resetDemo() {

@@ -75,7 +75,7 @@ export default function WhoIsIn() {
           </button>
         ) : (
           <Link
-            href="/room/plan"
+            href="/room/pay"
             className={s.primary}
             aria-disabled={!allIn}
             onClick={(e) => !allIn && e.preventDefault()}

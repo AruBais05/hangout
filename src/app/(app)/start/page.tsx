@@ -4,15 +4,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import s from "@/components/demo/screen.module.css";
-import { DEFAULT_MEETING, MAX_DAYS, PEOPLE, PRICES, PURPOSES, type PurposeId } from "@/lib/config";
+import { DEFAULT_MEETING, DEMO_QUIZ, MAX_DAYS, PEOPLE, PRICES, PURPOSES, type GroupQuiz, type PurposeId, type Vibe } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
-import { bigReasons, days, isBig } from "@/lib/plan";
-import { newMeeting } from "@/lib/store";
+import { bigReasons, days, isBig, meetingOf } from "@/lib/plan";
+import { newMeeting, update, useDemo } from "@/lib/store";
 import styles from "./start.module.css";
 
 export default function Start() {
   const router = useRouter();
+  const [state] = useDemo();
   const [purpose, setPurpose] = useState<PurposeId>(DEFAULT_MEETING.purpose);
+  const [vibe, setVibe] = useState<Vibe>(DEFAULT_MEETING.vibe);
   const [from, setFrom] = useState(DEFAULT_MEETING.from);
   const [to, setTo] = useState(DEFAULT_MEETING.to);
   const [people, setPeople] = useState(DEFAULT_MEETING.people);
@@ -26,12 +28,27 @@ export default function Start() {
       : span > MAX_DAYS
         ? `Pick ${MAX_DAYS} days or fewer.`
         : "";
-  const meeting = { purpose, from, to, people, name };
+  // Keep the last city the host picked; their map pin changes it later.
+  const { city, center } = meetingOf(state);
+  const meeting = { purpose, from, to, people, name, vibe, city, center };
   const big = isBig(meeting);
 
   function next() {
     if (dateError) return;
-    newMeeting(meeting);
+    // The demo quiz is ready at once, so nobody waits. The AI writes this group's quiz in the
+    // background, once; everyone who joins gets the same questions.
+    const demo: GroupQuiz = { source: "demo", questions: DEMO_QUIZ };
+    newMeeting(meeting, demo);
+    fetch("/api/quiz", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ purpose, vibe, city }),
+    })
+      .then((r) => r.json())
+      .then((q: GroupQuiz) => {
+        if (q?.questions?.length) update((st) => (st.joined ? {} : { groupQuiz: q }));
+      })
+      .catch(() => {});
     router.push("/start/people");
   }
 
@@ -48,11 +65,34 @@ export default function Start() {
                 type="radio"
                 name="purpose"
                 checked={purpose === p.id}
-                onChange={() => setPurpose(p.id)}
+                onChange={() => {
+                  setPurpose(p.id);
+                  setVibe(p.vibe);
+                }}
               />
               <span>
                 <strong>{p.label}</strong>
                 <span className={s.sub}>{p.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className={styles.group}>
+        <legend className={s.label}>What&rsquo;s the vibe?</legend>
+        <div className={styles.vibes}>
+          {(
+            [
+              { id: "active", label: "Active", hint: "Moving, doing, exploring" },
+              { id: "chill", label: "Chill", hint: "Sit down, talk, relax" },
+            ] as const
+          ).map((v) => (
+            <label key={v.id} className={styles.tile}>
+              <input type="radio" name="vibe" checked={vibe === v.id} onChange={() => setVibe(v.id)} />
+              <span>
+                <strong>{v.label}</strong>
+                <span className={s.sub}>{v.hint}</span>
               </span>
             </label>
           ))}

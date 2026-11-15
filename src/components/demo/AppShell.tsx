@@ -16,6 +16,7 @@ const ALL_STEPS = [
   { path: "/room/ideas", label: "Ideas" },
   { path: "/room/vote", label: "Vote" },
   { path: "/room/in", label: "Who's in", big: true },
+  { path: "/room/pay", label: "Pay my share" },
   { path: "/room/plan", label: "The plan" },
   { path: "/room/night", label: "On the day" },
   { path: "/room/recap", label: "Recap" },

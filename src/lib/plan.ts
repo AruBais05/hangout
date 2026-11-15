@@ -1,19 +1,33 @@
 import {
   BIG_PLAN,
   CREW_POOL,
+  DEFAULT_CITY,
   DEFAULT_MEETING,
+  DEMO_QUIZ,
   MOCK_SCHEDULE,
+  PARTNERS,
   PERSONALITIES,
+  PRICES,
   PURPOSES,
-  QUIZ,
   SLOTS,
   SLOT_HOURS,
-  type Idea,
+  TYPE_ORDER,
+  partnersFor,
   type Member,
   type Personality,
+  type QuizQuestion,
   type Slot,
 } from "./config";
-import { formatPrice } from "./money";
+import {
+  groupBudgetCents,
+  inputKey,
+  parseClock,
+  planCount,
+  samplePlans,
+  type PlanCard,
+  type SuggestInput,
+  type SuggestMember,
+} from "./suggest";
 import type { DemoState, Meeting } from "./store";
 
 /* ---------- dates ---------- */
@@ -50,7 +64,7 @@ export const cellKey = (day: string, slot: Slot) => `${day}|${slot}`;
 /* ---------- the meeting ---------- */
 
 export function meetingOf(s: DemoState): Meeting {
-  return s.meeting ?? { ...DEFAULT_MEETING, name: "" };
+  return s.meeting ?? { ...DEFAULT_MEETING, name: "", city: DEFAULT_CITY.name, center: DEFAULT_CITY.center };
 }
 
 export function purposeOf(m: Meeting) {
@@ -72,6 +86,44 @@ export function bigReasons(m: Meeting): string[] {
   if (m.people >= BIG_PLAN.minPeople) r.push(`${m.people} people`);
   return r;
 }
+
+/** The questions everyone in this group answers. */
+export function quizOf(s: DemoState): QuizQuestion[] {
+  return s.groupQuiz?.questions ?? DEMO_QUIZ;
+}
+
+/* ---------- places ---------- */
+
+export const roundPoint = (p: [number, number]): [number, number] => [
+  Math.round(p[0] * 100) / 100,
+  Math.round(p[1] * 100) / 100,
+];
+
+/** A demo friend's rough home: the city center plus their offset, rounded to about 1 km. */
+export function crewPoint(m: Meeting, member: Member): [number, number] {
+  return roundPoint([m.center[0] + member.offset[0], m.center[1] + member.offset[1]]);
+}
+
+export function myPoint(s: DemoState): [number, number] {
+  return s.me.point ?? roundPoint(meetingOf(s).center);
+}
+
+export function groupMidpoint(s: DemoState): [number, number] {
+  const m = meetingOf(s);
+  const pts = [myPoint(s), ...crewOf(m).map((c) => crewPoint(m, c))];
+  return [
+    Number((pts.reduce((a, p) => a + p[0], 0) / pts.length).toFixed(4)),
+    Number((pts.reduce((a, p) => a + p[1], 0) / pts.length).toFixed(4)),
+  ];
+}
+
+/** Coordinates for a plan, when we know them (partner venues). */
+export function placePoint(m: Meeting, plan: Pick<PlanCard, "partnerName">): [number, number] | null {
+  const p = partnersFor(m.city).find((x) => x.name === plan.partnerName);
+  return p ? [p.lat, p.lng] : null;
+}
+
+export const hasPartners = (city: string) => !!PARTNERS[city.trim().toLowerCase()];
 
 /* ---------- demo calendar ---------- */
 
@@ -119,7 +171,7 @@ export function memberFree(member: Member, m: Meeting): Set<string> {
   return free;
 }
 
-/** How many people (crew who joined + you) are free in each cell. */
+/** How many people (crew + you) are free in each cell. */
 export function freeCounts(s: DemoState): Record<string, number> {
   const m = meetingOf(s);
   const counts: Record<string, number> = {};
@@ -128,125 +180,138 @@ export function freeCounts(s: DemoState): Record<string, number> {
   return counts;
 }
 
-/* ---------- quiz ---------- */
-
-export function personalityOf(quiz: Record<string, string[]>): Personality {
-  const score: Record<Personality, number> = { adventurer: 0, host: 0, explorer: 0, chill: 0 };
-  for (const q of QUIZ) {
-    for (const label of quiz[q.id] ?? []) {
-      const t = q.options.find((o) => o.label === label)?.type;
-      if (t) score[t]++;
+/** Our own code picks the shared day and time window; the AI only writes the plans. */
+export function bestCell(s: DemoState): { day: string; slot: Slot; free: number } {
+  const m = meetingOf(s);
+  const counts = freeCounts(s);
+  const list = days(m.from, m.to);
+  if (purposeOf(m).days > 1) {
+    let best = { day: list[0], slot: "Afternoon" as Slot, free: -1 };
+    for (const d of list.filter((x) => dow(x) === 6)) {
+      const sun = list[list.indexOf(d) + 1];
+      if (!sun) continue;
+      const n = Math.min(counts[cellKey(d, "Afternoon")] ?? 0, counts[cellKey(sun, "Afternoon")] ?? 0);
+      if (n > best.free) best = { day: d, slot: "Afternoon", free: n };
+    }
+    return { ...best, free: Math.max(0, best.free) };
+  }
+  let best = { day: list[list.length - 1], slot: "Evening" as Slot, free: -1, score: -1 };
+  for (const d of list) {
+    for (const slot of SLOTS) {
+      const n = counts[cellKey(d, slot)] ?? 0;
+      const score = n + (dow(d) === 0 || dow(d) === 6 ? 0.1 : 0) + (slot === "Evening" ? 0.05 : 0);
+      if (score > best.score) best = { day: d, slot, free: n, score };
     }
   }
-  const order: Personality[] = ["adventurer", "explorer", "host", "chill"];
-  return order.reduce((a, b) => (score[b] > score[a] ? b : a), order[0]);
+  return { day: best.day, slot: best.slot, free: Math.max(0, best.free) };
 }
+
+/* ---------- quiz ---------- */
+
+export function personalityOf(answers: Record<number, number>, questions: QuizQuestion[]): Personality {
+  const score: Record<Personality, number> = { explorer: 0, homebody: 0, nightowl: 0, planner: 0 };
+  questions.forEach((q, qi) => {
+    const a = q.answers[answers[qi]];
+    if (!a) return;
+    for (const [t, p] of Object.entries(a.points)) score[t as Personality] += p ?? 0;
+  });
+  return TYPE_ORDER.reduce((a, b) => (score[b] > score[a] ? b : a), TYPE_ORDER[0]);
+}
+
+export const myType = (s: DemoState) => personalityOf(s.answers, quizOf(s));
 
 export function groupMix(s: DemoState): { type: Personality; count: number }[] {
   const m = meetingOf(s);
   const types = crewOf(m).map((c) => c.type);
-  if (s.joined) types.push(personalityOf(s.quiz));
+  if (s.joined) types.push(myType(s));
   const counts = new Map<Personality, number>();
   for (const t of types) counts.set(t, (counts.get(t) ?? 0) + 1);
   return [...counts.entries()].map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count);
 }
 
 export function mixLabel(type: Personality, count: number): string {
-  const name = PERSONALITIES[type].name.replace("The ", "");
-  return `${count} ${name}${count > 1 ? "s" : ""}`;
+  const p = PERSONALITIES[type];
+  return `${count} ${count > 1 ? p.plural : p.name}`;
+}
+
+/* ---------- AI plans ---------- */
+
+/** What we send to /api/suggest. Names are made unique so each person gets their own line. */
+export function suggestInput(s: DemoState): SuggestInput {
+  const m = meetingOf(s);
+  const { day, slot } = bestCell(s);
+  const crew: SuggestMember[] = crewOf(m).map((c) => ({
+    name: c.name,
+    type: c.type,
+    budget: c.budget,
+    point: crewPoint(m, c),
+    travel: c.travel,
+  }));
+  let name = s.me.name.trim().slice(0, 20) || "You";
+  if (crew.some((c) => c.name.toLowerCase() === name.toLowerCase())) name = `${name.slice(0, 18)} 2`;
+  const me: SuggestMember = {
+    name,
+    type: myType(s),
+    budget: s.me.budget ?? "50to100",
+    point: myPoint(s),
+    travel: s.me.travel,
+  };
+  return {
+    city: m.city,
+    date: day,
+    window: { from: SLOT_HOURS[slot].from, to: SLOT_HOURS[slot].to },
+    vibe: m.vibe,
+    groupSize: m.people,
+    hasPass: !!s.pass,
+    members: [me, ...crew],
+  };
+}
+
+export const myName = (s: DemoState) => suggestInput(s).members[0].name;
+
+export type RankedIdea = PlanCard & {
+  place: string; // partner venue, or the neighborhood
+  area: string; // the city
+  partner: boolean;
+  when: string; // "YYYY-MM-DD|Slot"
+  whenLabel: string;
+  reasons: string[];
+};
+
+/** The plans on the voting screen: the AI's if loaded for these inputs, otherwise samples. */
+export function rankIdeas(s: DemoState): RankedIdea[] {
+  const m = meetingOf(s);
+  const input = suggestInput(s);
+  const key = inputKey(input);
+  const plans = s.suggest?.key === key ? s.suggest.result.plans : samplePlans(input, planCount(input.hasPass));
+  const { day, slot } = bestCell(s);
+  const trip = purposeOf(m).days > 1;
+  const list = days(m.from, m.to);
+  return plans.map((p) => ({
+    ...p,
+    place: p.partnerName ?? p.neighborhood,
+    area: m.city,
+    partner: !!p.partnerName,
+    when: cellKey(day, slot),
+    whenLabel: trip
+      ? `${dayLabel(day, "long")} – ${dayLabel(list[list.indexOf(day) + 1] ?? day)}`
+      : `${dayLabel(day, "long")}, ${p.startTime}`,
+    reasons: [
+      ...(p.partnerName ? [`Partner: ${PRICES.partnerDiscountPct}% off`] : []),
+      ...(p.eventName ? [`Event: ${p.eventName}`] : []),
+    ],
+  }));
 }
 
 /* ---------- budget ---------- */
 
-export function budgetKind(m: Meeting): "day" | "trip" {
-  return purposeOf(m).days > 1 ? "trip" : "day";
-}
-
 /** Private budget match: only the range that works for everyone is shown. */
 export function workableRange(s: DemoState): { low: number; high: number } {
-  const m = meetingOf(s);
-  const kind = budgetKind(m);
-  const all = crewOf(m).map((c) => c.budget[kind]);
-  if (s.budgetCents) all.push(s.budgetCents);
-  const high = Math.min(...all);
-  const low = Math.floor((high * 0.75) / 500) * 500;
-  return { low, high };
+  const high = groupBudgetCents(suggestInput(s).members);
+  return { low: Math.floor((high * 0.6) / 500) * 500, high };
 }
 
-/* ---------- ideas ---------- */
-
-export type RankedIdea = Idea & { when: string; whenLabel: string; free: number; reasons: string[] };
-
-export function rankIdeas(s: DemoState): RankedIdea[] {
-  const m = meetingOf(s);
-  const purpose = purposeOf(m);
-  const size = m.people;
-  const counts = freeCounts(s);
-  const { high } = workableRange(s);
-  const mix = groupMix(s);
-  const top = mix[0]?.type;
-  const trip = purpose.days > 1;
-  const list = days(m.from, m.to);
-
-  const ranked = purpose.ideas.map((idea) => {
-    let when = "";
-    let free = -1;
-    if (trip) {
-      // A weekend works when people are free on Saturday and Sunday.
-      for (const d of list.filter((x) => dow(x) === 6)) {
-        const sun = list[list.indexOf(d) + 1];
-        if (!sun) continue;
-        const n = Math.min(counts[cellKey(d, "Afternoon")] ?? 0, counts[cellKey(sun, "Afternoon")] ?? 0);
-        if (n > free) {
-          free = n;
-          when = d;
-        }
-      }
-      if (!when) {
-        when = list[0];
-        free = 0;
-      }
-    } else {
-      for (const d of list) {
-        for (const slot of idea.slots) {
-          const k = cellKey(d, slot);
-          const n = counts[k] ?? 0;
-          const weekendBonus = dow(d) === 0 || dow(d) === 6 ? 0.1 : 0;
-          if (n + weekendBonus > free) {
-            free = n + weekendBonus;
-            when = k;
-          }
-        }
-      }
-      free = Math.floor(free);
-    }
-
-    const [day, slot] = when.split("|") as [string, Slot | undefined];
-    const whenLabel = trip
-      ? `${dayLabel(day, "long")} – ${dayLabel(list[list.indexOf(day) + 1] ?? day)}`
-      : `${dayLabel(day, "long")}, ${SLOT_HOURS[slot ?? "Evening"].time}`;
-
-    const weekday = new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" });
-    const reasons: string[] = [];
-    reasons.push(free >= size ? `Everyone's free ${weekday}` : `${free} of ${size} free ${weekday}`);
-    if (idea.eachCents === 0) reasons.push("Free");
-    else if (idea.eachCents <= high) reasons.push(isBig(m) ? "Inside the group's range" : "Under everyone's budget");
-    else reasons.push(`${formatPrice(idea.eachCents - high)} over someone's budget`);
-    if (top && idea.fits.includes(top)) reasons.push(`Fits the ${PERSONALITIES[top].name.replace("The ", "")}s`);
-    if (idea.partner) reasons.push("Partner venue");
-
-    const score =
-      free * 100 + (idea.eachCents <= high ? 30 : 0) + (top && idea.fits.includes(top) ? 10 : 0) + (idea.partner ? 5 : 0);
-    return { ...idea, when, whenLabel, free, reasons, score };
-  });
-
-  ranked.sort((a, b) => b.score - a.score);
-  return ranked.slice(0, 3).map((r) => {
-    const { score, ...rest } = r;
-    void score;
-    return rest;
-  });
-}
+/* ---------- votes ---------- */
 
 /** Demo friends' votes: most pick the top idea, a couple spread out. */
 export function crewVotes(s: DemoState, ideas: RankedIdea[]): Record<string, string> {
@@ -269,21 +334,50 @@ export function winnerOf(s: DemoState, ideas: RankedIdea[]): RankedIdea {
   return ideas.reduce((a, b) => (t[b.id] > t[a.id] ? b : a), ideas[0]);
 }
 
+/* ---------- pay my share ---------- */
+
+export const thisMonth = () => new Date().toISOString().slice(0, 7);
+
+export function passBookingsUsed(s: DemoState): number {
+  // Read the clock only when there's a count to check (never during the server prerender).
+  if (!s.passBookings.used) return 0;
+  return s.passBookings.month === thisMonth() ? s.passBookings.used : 0;
+}
+
+export type ShareBreakdown = {
+  shareCents: number;
+  discountCents: number;
+  feeCents: number;
+  totalCents: number;
+  passCovers: boolean;
+};
+
+/** All money math in cents, from the config rules. */
+export function shareBreakdown(s: DemoState, idea: Pick<PlanCard, "eachCents" | "partnerName">): ShareBreakdown {
+  const shareCents = idea.eachCents;
+  const discountCents = idea.partnerName ? Math.round((shareCents * PRICES.partnerDiscountPct) / 100) : 0;
+  const passCovers = !!s.pass && passBookingsUsed(s) < PRICES.passFreeBookings;
+  const feeCents = shareCents === 0 || passCovers ? 0 : PRICES.bookingFeeCents;
+  return { shareCents, discountCents, feeCents, totalCents: shareCents - discountCents + feeCents, passCovers };
+}
+
 /* ---------- calendar export ---------- */
 
 function stamps(m: Meeting, idea: RankedIdea): [string, string] {
-  const [day, slot] = idea.when.split("|") as [string, Slot | undefined];
+  const [day] = idea.when.split("|");
   const compact = (d: string) => d.replaceAll("-", "");
   if (purposeOf(m).days > 1) {
     const end = new Date(`${day}T12:00:00`);
     end.setDate(end.getDate() + 1);
     return [`${compact(day)}T100000`, `${compact(end.toISOString().slice(0, 10))}T170000`];
   }
-  const h = SLOT_HOURS[slot ?? "Evening"];
-  const [hh, mm] = h.start.split(":").map(Number);
-  const endH = String(Math.min(23, hh + 3)).padStart(2, "0");
-  return [`${compact(day)}T${String(hh).padStart(2, "0")}${String(mm).padStart(2, "0")}00`, `${compact(day)}T${endH}${String(mm).padStart(2, "0")}00`];
+  const start = parseClock(idea.startTime) ?? 19 * 60 + 30;
+  const end = Math.min(23 * 60 + 59, start + 180);
+  const hhmm = (t: number) => `${String(Math.floor(t / 60)).padStart(2, "0")}${String(t % 60).padStart(2, "0")}00`;
+  return [`${compact(day)}T${hhmm(start)}`, `${compact(day)}T${hhmm(end)}`];
 }
+
+const where = (idea: RankedIdea) => `${idea.place}, ${idea.area}`;
 
 export function googleCalendarUrl(m: Meeting, idea: RankedIdea): string {
   const [a, b] = stamps(m, idea);
@@ -291,9 +385,8 @@ export function googleCalendarUrl(m: Meeting, idea: RankedIdea): string {
     action: "TEMPLATE",
     text: `${idea.title} with the crew`,
     dates: `${a}/${b}`,
-    details: `Planned with Hangout. ${idea.place}.`,
-    location: `${idea.place}, ${idea.area}`,
-    ctz: "America/New_York",
+    details: `Planned with Hangout. ${idea.summary}`,
+    location: where(idea),
   });
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
 }
@@ -308,11 +401,11 @@ export function icsFile(m: Meeting, idea: RankedIdea): string {
     "BEGIN:VEVENT",
     `UID:${idea.id}-${a}@hangout.app`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
-    `DTSTART;TZID=America/New_York:${a}`,
-    `DTEND;TZID=America/New_York:${b}`,
+    `DTSTART:${a}`,
+    `DTEND:${b}`,
     `SUMMARY:${esc(`${idea.title} with the crew`)}`,
-    `LOCATION:${esc(`${idea.place}, ${idea.area}`)}`,
-    "DESCRIPTION:Planned with Hangout.",
+    `LOCATION:${esc(where(idea))}`,
+    `DESCRIPTION:${esc(`Planned with Hangout. ${idea.summary}`)}`,
     "END:VEVENT",
     "END:VCALENDAR",
     "",

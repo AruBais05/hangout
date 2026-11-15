@@ -1,10 +1,14 @@
-// All prices, rules and demo data live here. Money is always integer cents.
-// Business model: "Hangout business model and proof of willingness to pay" (Nov 15, 2026).
+// All prices, rules, AI settings and demo data live here. Money is always integer cents.
+
+/* ---------- money ---------- */
 
 export const PRICES = {
   unlockCents: 499, // Big Plan unlock, once per plan, paid by the organizer
   passYearlyCents: 3999, // Crew Pass, yearly
   passMonthlyCents: 599, // Crew Pass, monthly
+  bookingFeeCents: 200, // per person, on each booked hangout
+  partnerDiscountPct: 10, // off the share at partner venues
+  passFreeBookings: 4, // fee-free bookings a month for a Crew Pass holder
 };
 
 /** A plan is "big" if any of these is true. */
@@ -20,85 +24,49 @@ export const ROOM_CODE = "HX7-K2Q";
 export const MAX_DAYS = 10; // longest date range you can pick
 export const PEOPLE = { min: 2, max: 12 };
 
+/* ---------- AI ---------- */
+
+export type AiProvider = "groq" | "gemini" | "anthropic";
+
+/**
+ * Which AI writes the plans and the quiz. Switch `provider` to change it; the routes don't change.
+ * Each provider reads its own server-only key: GROQ_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY.
+ */
+export const AI = {
+  provider: "groq" as AiProvider,
+  models: {
+    // Groq. Llama 3.3 70B isn't available on this free-tier key (404), so we use OpenAI's open-weight
+    // model on Groq. Other ids this key can use: "openai/gpt-oss-20b" (faster), "qwen/qwen3.8-27b".
+    groq: "openai/gpt-oss-120b",
+    // Gemini through its OpenAI-compatible endpoint. Check aistudio.google.com/docs/openai for current ids.
+    gemini: "gemini-3.8-flash",
+    anthropic: "claude-haiku-5-5",
+  } satisfies Record<AiProvider, string>,
+  maxTokens: 3000, // reasoning models spend some of this thinking, so 1500 could cut 5 plans short
+  reasoningEffort: "low" as const, // gpt-oss on Groq: low keeps replies fast
+  temperature: 0.7, // ignored for anthropic: Claude Haiku 5.5 rejects non-default sampling values
+  timeoutMs: 8000,
+  rateLimit: { calls: 10, windowMs: 10 * 60 * 1000 }, // per IP
+  cacheMs: 60 * 60 * 1000,
+};
+
+/* ---------- city ---------- */
+
+export const DEFAULT_CITY = { name: "Austin, TX", center: [30.2672, -97.7431] as [number, number] };
+export const TRAVEL_MINUTES = [15, 30, 45] as const;
+export type TravelMinutes = (typeof TRAVEL_MINUTES)[number];
+
 /* ---------- what the meeting is for ---------- */
 
 export type PurposeId = "food" | "active" | "chill" | "birthday" | "trip";
-export type Personality = "adventurer" | "host" | "explorer" | "chill";
+export type Vibe = "active" | "chill";
 
-export type Idea = {
-  id: string;
-  title: string;
-  place: string;
-  area: string;
-  eachCents: number; // per person, paid at the venue
-  partner: boolean; // partner pays Hangout a commission; never the user
-  fits: Personality[];
-  slots: Slot[]; // times of day this idea works for
-};
-
-export const PURPOSES: {
-  id: PurposeId;
-  label: string;
-  hint: string;
-  days: number;
-  ideas: Idea[];
-}[] = [
-  {
-    id: "food",
-    label: "Food & drinks",
-    hint: "Dinner, brunch, a bar",
-    days: 1,
-    ideas: [
-      { id: "tacos", title: "Taco crawl in Bushwick", place: "Los Hermanos + 2 more", area: "Bushwick", eachCents: 2200, partner: true, fits: ["explorer", "adventurer"], slots: ["Evening"] },
-      { id: "brunch", title: "Long brunch", place: "Sunday in Brooklyn", area: "Williamsburg", eachCents: 3400, partner: false, fits: ["host", "chill"], slots: ["Morning", "Afternoon"] },
-      { id: "dumplings", title: "Dumpling dinner", place: "Nom Wah Tea Parlor", area: "Chinatown", eachCents: 1800, partner: false, fits: ["chill", "host"], slots: ["Evening"] },
-      { id: "rooftop", title: "Rooftop happy hour", place: "Westlight", area: "Williamsburg", eachCents: 2800, partner: false, fits: ["host", "adventurer"], slots: ["Evening"] },
-    ],
-  },
-  {
-    id: "active",
-    label: "Something active",
-    hint: "Climb, bowl, move",
-    days: 1,
-    ideas: [
-      { id: "boulder", title: "Bouldering, then tacos", place: "Brooklyn Boulders", area: "Gowanus", eachCents: 3800, partner: true, fits: ["adventurer", "explorer"], slots: ["Afternoon", "Evening"] },
-      { id: "bowling", title: "Bowling and arcade", place: "Frames Bowling Lounge", area: "Midtown", eachCents: 3000, partner: false, fits: ["host", "chill"], slots: ["Afternoon", "Evening"] },
-      { id: "kayak", title: "Free kayaking on the Hudson", place: "Pier 26 Boathouse", area: "Tribeca", eachCents: 0, partner: false, fits: ["adventurer"], slots: ["Morning", "Afternoon"] },
-    ],
-  },
-  {
-    id: "chill",
-    label: "Chill night",
-    hint: "Games, a movie, a class",
-    days: 1,
-    ideas: [
-      { id: "games", title: "Board game café", place: "Hex & Co.", area: "Upper West Side", eachCents: 1200, partner: true, fits: ["chill", "host"], slots: ["Afternoon", "Evening"] },
-      { id: "pottery", title: "Pottery class", place: "Clay Space Studio", area: "Williamsburg", eachCents: 4500, partner: false, fits: ["explorer", "chill"], slots: ["Afternoon", "Evening"] },
-      { id: "cinema", title: "Indie movie night", place: "Nitehawk Cinema", area: "Williamsburg", eachCents: 1600, partner: false, fits: ["chill", "explorer"], slots: ["Evening"] },
-    ],
-  },
-  {
-    id: "birthday",
-    label: "Birthday",
-    hint: "Someone's big day",
-    days: 1,
-    ideas: [
-      { id: "karaoke", title: "Private karaoke room", place: "Sing Sing Avenue A", area: "East Village", eachCents: 3500, partner: true, fits: ["host", "adventurer"], slots: ["Evening"] },
-      { id: "dinner", title: "Long table dinner", place: "Lilia", area: "Williamsburg", eachCents: 5500, partner: false, fits: ["host", "chill"], slots: ["Evening"] },
-      { id: "party-bowl", title: "Bowling party", place: "Brooklyn Bowl", area: "Williamsburg", eachCents: 3200, partner: false, fits: ["adventurer", "host"], slots: ["Afternoon", "Evening"] },
-    ],
-  },
-  {
-    id: "trip",
-    label: "Weekend trip",
-    hint: "2 nights away",
-    days: 2,
-    ideas: [
-      { id: "cabin", title: "Cabin in the Catskills", place: "Pine Hollow Cabins", area: "Phoenicia, NY", eachCents: 17000, partner: true, fits: ["adventurer", "chill"], slots: ["Afternoon"] },
-      { id: "farm", title: "Farm stay in the Hudson Valley", place: "Old Mill Farm", area: "Rhinebeck, NY", eachCents: 14000, partner: false, fits: ["chill", "host"], slots: ["Afternoon"] },
-      { id: "beach", title: "Beach house in Montauk", place: "Ditch Plains House", area: "Montauk, NY", eachCents: 23000, partner: false, fits: ["explorer", "host"], slots: ["Afternoon"] },
-    ],
-  },
+export const PURPOSES: { id: PurposeId; label: string; hint: string; days: number; vibe: Vibe }[] = [
+  { id: "food", label: "Food & drinks", hint: "Dinner, brunch, a bar", days: 1, vibe: "chill" },
+  { id: "active", label: "Something active", hint: "Climb, bowl, move", days: 1, vibe: "active" },
+  { id: "chill", label: "Chill night", hint: "Games, a movie, a class", days: 1, vibe: "chill" },
+  { id: "birthday", label: "Birthday", hint: "Someone's big day", days: 1, vibe: "active" },
+  { id: "trip", label: "Weekend trip", hint: "2 nights away", days: 2, vibe: "active" },
 ];
 
 /* ---------- availability ---------- */
@@ -118,71 +86,131 @@ export const MOCK_SCHEDULE = [
   { label: "Gym", days: [2, 4], from: 19, to: 20 },
 ];
 
-/* ---------- personality quiz ---------- */
+/* ---------- hangout types and quiz ---------- */
 
-export const PERSONALITIES: Record<Personality, { name: string; line: string }> = {
-  adventurer: { name: "The Adventurer", line: "Up for anything that moves." },
-  host: { name: "The Host", line: "Brings everyone together." },
-  explorer: { name: "The Explorer", line: "Always finds the new spot." },
-  chill: { name: "The Chill One", line: "Here for good company." },
+export type Personality = "explorer" | "homebody" | "nightowl" | "planner";
+export const TYPE_ORDER: Personality[] = ["explorer", "nightowl", "planner", "homebody"];
+
+export const PERSONALITIES: Record<Personality, { name: string; plural: string; line: string }> = {
+  explorer: { name: "Explorer", plural: "Explorers", line: "Always up for the new spot." },
+  homebody: { name: "Homebody", plural: "Homebodies", line: "Cozy, close and good company." },
+  nightowl: { name: "Night owl", plural: "Night owls", line: "Comes alive after dark." },
+  planner: { name: "Planner", plural: "Planners", line: "Has the plan, the backup and the snacks." },
 };
 
-export type QuizQuestion = {
-  id: string;
-  q: string;
-  multi?: boolean;
-  options: { label: string; type?: Personality }[];
-};
+/** A personality question. The same shape whether we wrote it or the AI did. */
+export type QuizQuestion = { text: string; answers: { text: string; points: Partial<Record<Personality, 1 | 2>> }[] };
+export type GroupQuiz = { source: "ai" | "fixed" | "demo"; questions: QuizQuestion[] };
 
-export const QUIZ: QuizQuestion[] = [
+/** Fixed quiz: used when the AI is off, slow or wrong. */
+export const FIXED_QUIZ: QuizQuestion[] = [
   {
-    id: "saturday",
-    q: "A perfect Saturday starts with…",
-    options: [
-      { label: "An early hike or a climb", type: "adventurer" },
-      { label: "A long brunch with friends", type: "host" },
-      { label: "A place nobody's tried yet", type: "explorer" },
-      { label: "Sleeping in, then something cozy", type: "chill" },
+    text: "A perfect Saturday starts with…",
+    answers: [
+      { text: "A place nobody's tried yet", points: { explorer: 2 } },
+      { text: "Sleeping in, then coffee at home", points: { homebody: 2 } },
+      { text: "Nothing until noon, out till late", points: { nightowl: 2 } },
+      { text: "A list, already half done", points: { planner: 2 } },
     ],
   },
   {
-    id: "role",
-    q: "In a group chat, you're the one…",
-    options: [
-      { label: "Making the plan", type: "host" },
-      { label: "Hyping it up", type: "adventurer" },
-      { label: "Sending the hidden-gem link", type: "explorer" },
-      { label: "Happy to tag along", type: "chill" },
+    text: "In the group chat, you're the one who…",
+    answers: [
+      { text: "Sends the hidden-gem link", points: { explorer: 2 } },
+      { text: "Says 'or we could stay in'", points: { homebody: 2 } },
+      { text: "Replies at 1 AM", points: { nightowl: 2 } },
+      { text: "Makes the poll", points: { planner: 2 } },
     ],
   },
   {
-    id: "night",
-    q: "Pick a night out:",
-    options: [
-      { label: "Loud and packed", type: "adventurer" },
-      { label: "Small and cozy", type: "chill" },
-      { label: "Something weird and new", type: "explorer" },
-      { label: "Big table, everyone invited", type: "host" },
+    text: "Pick a night out:",
+    answers: [
+      { text: "Something weird and new", points: { explorer: 2, nightowl: 1 } },
+      { text: "Small, cozy, home by ten", points: { homebody: 2 } },
+      { text: "Loud, late, one more stop", points: { nightowl: 2 } },
+      { text: "Booked table, everyone on time", points: { planner: 2 } },
     ],
   },
   {
-    id: "distance",
-    q: "How far will you travel?",
-    options: [{ label: "Walking distance" }, { label: "Up to 30 minutes" }, { label: "Anywhere, it's an adventure" }],
+    text: "Your friends would say you're good at…",
+    answers: [
+      { text: "Finding the spot", points: { explorer: 2 } },
+      { text: "Making people feel at home", points: { homebody: 2 } },
+      { text: "Keeping the night going", points: { nightowl: 2 } },
+      { text: "Getting everyone there", points: { planner: 2 } },
+    ],
   },
   {
-    id: "food",
-    q: "Any food rules?",
-    multi: true,
-    options: [{ label: "None" }, { label: "Vegetarian" }, { label: "Vegan" }, { label: "Halal" }, { label: "Gluten-free" }],
+    text: "Plans change last minute. You…",
+    answers: [
+      { text: "Love it, let's improvise", points: { explorer: 1, nightowl: 1 } },
+      { text: "Happily go home", points: { homebody: 2 } },
+      { text: "Already have plan B", points: { planner: 2 } },
+    ],
   },
 ];
 
-/** Private budget choices: everyday plans vs. trips. */
-export const BUDGETS = {
-  day: [1500, 4000, 7500, 15000],
-  trip: [10000, 20000, 30000, 40000],
-};
+/** Pre-written quiz for the demo group, so the juror path never waits on the AI. */
+export const DEMO_QUIZ: QuizQuestion[] = [
+  {
+    text: "Friday after work, where do you land?",
+    answers: [
+      { text: "A food truck I haven't tried", points: { explorer: 2 } },
+      { text: "My couch, snacks ready", points: { homebody: 2 } },
+      { text: "Wherever there's live music", points: { nightowl: 2 } },
+      { text: "The spot I booked Tuesday", points: { planner: 2 } },
+    ],
+  },
+  {
+    text: "Pick the best kind of tired:",
+    answers: [
+      { text: "Legs sore from a new trail", points: { explorer: 2 } },
+      { text: "Full from a long dinner", points: { homebody: 1, planner: 1 } },
+      { text: "Up past 2 AM again", points: { nightowl: 2 } },
+    ],
+  },
+  {
+    text: "A friend is visiting town. You…",
+    answers: [
+      { text: "Show them somewhere off the map", points: { explorer: 2 } },
+      { text: "Cook for them at home", points: { homebody: 2 } },
+      { text: "Take them out late", points: { nightowl: 2 } },
+      { text: "Send a day-by-day plan", points: { planner: 2 } },
+    ],
+  },
+  {
+    text: "What makes a hangout great?",
+    answers: [
+      { text: "Something we've never done", points: { explorer: 2 } },
+      { text: "Easy talk, no rush", points: { homebody: 2 } },
+      { text: "Good energy that runs late", points: { nightowl: 2 } },
+      { text: "Everyone actually shows up", points: { planner: 2 } },
+    ],
+  },
+  {
+    text: "Your phone's most-used app on weekends:",
+    answers: [
+      { text: "Maps", points: { explorer: 2 } },
+      { text: "Streaming", points: { homebody: 2 } },
+      { text: "Group chat at midnight", points: { nightowl: 2 } },
+      { text: "Calendar", points: { planner: 2 } },
+    ],
+  },
+];
+
+/* ---------- fixed questions ---------- */
+
+export type BudgetRangeId = "u25" | "25to50" | "50to100" | "flex";
+
+/** The group budget is the lowest of everyone's upper bounds. */
+export const BUDGET_RANGES: { id: BudgetRangeId; label: string; capCents: number }[] = [
+  { id: "u25", label: "Under $25", capCents: 2500 },
+  { id: "25to50", label: "$25–50", capCents: 5000 },
+  { id: "50to100", label: "$50–100", capCents: 10000 },
+  { id: "flex", label: "Flexible", capCents: 15000 },
+];
+
+export const DEAL_BREAKERS = ["None", "Loud places", "Long walks", "Late nights", "Drinking-focused", "Big crowds"];
 
 /* ---------- the demo crew ---------- */
 
@@ -190,40 +218,215 @@ export type Member = {
   id: string;
   name: string;
   type: Personality;
-  budget: { day: number; trip: number }; // private
+  budget: BudgetRangeId; // private
+  offset: [number, number]; // rough home, as lat/lng offset from the city center (moves with the city)
+  travel: TravelMinutes;
 };
 
 // Up to 11 sample friends. A meeting for N people uses the first N − 1.
 export const CREW_POOL: Member[] = [
-  { id: "maya", name: "Maya", type: "adventurer", budget: { day: 6000, trip: 25000 } },
-  { id: "jordan", name: "Jordan", type: "host", budget: { day: 4500, trip: 18000 } },
-  { id: "priya", name: "Priya", type: "explorer", budget: { day: 8000, trip: 30000 } },
-  { id: "leo", name: "Leo", type: "adventurer", budget: { day: 5000, trip: 20000 } },
-  { id: "sam", name: "Sam", type: "chill", budget: { day: 4000, trip: 22000 } },
-  { id: "nia", name: "Nia", type: "host", budget: { day: 7000, trip: 26000 } },
-  { id: "omar", name: "Omar", type: "explorer", budget: { day: 5500, trip: 19000 } },
-  { id: "zoe", name: "Zoe", type: "chill", budget: { day: 4200, trip: 21000 } },
-  { id: "ben", name: "Ben", type: "adventurer", budget: { day: 9000, trip: 35000 } },
-  { id: "ivy", name: "Ivy", type: "explorer", budget: { day: 6500, trip: 24000 } },
-  { id: "raf", name: "Raf", type: "host", budget: { day: 5000, trip: 20000 } },
+  { id: "maya", name: "Maya", type: "explorer", budget: "50to100", offset: [0.004, 0.035], travel: 30 },
+  { id: "jordan", name: "Jordan", type: "planner", budget: "25to50", offset: [0.045, -0.012], travel: 30 },
+  { id: "priya", name: "Priya", type: "nightowl", budget: "50to100", offset: [-0.032, -0.006], travel: 45 },
+  { id: "leo", name: "Leo", type: "homebody", budget: "flex", offset: [0.012, -0.041], travel: 15 },
+  { id: "sam", name: "Sam", type: "homebody", budget: "25to50", offset: [-0.051, 0.028], travel: 30 },
+  { id: "nia", name: "Nia", type: "planner", budget: "50to100", offset: [0.062, 0.018], travel: 30 },
+  { id: "omar", name: "Omar", type: "explorer", budget: "25to50", offset: [-0.018, 0.052], travel: 45 },
+  { id: "zoe", name: "Zoe", type: "nightowl", budget: "flex", offset: [0.027, 0.009], travel: 30 },
+  { id: "ben", name: "Ben", type: "explorer", budget: "50to100", offset: [-0.066, -0.031], travel: 30 },
+  { id: "ivy", name: "Ivy", type: "planner", budget: "flex", offset: [0.081, -0.044], travel: 15 },
+  { id: "raf", name: "Raf", type: "nightowl", budget: "25to50", offset: [-0.009, -0.072], travel: 30 },
 ];
 
 export const DEFAULT_MEETING = {
   purpose: "active" as PurposeId,
+  vibe: "active" as Vibe,
   from: "2026-11-16",
   to: "2026-11-22",
   people: 5,
 };
 
+/* ---------- partners ---------- */
+
+export type Partner = {
+  name: string;
+  neighborhood: string;
+  category: string;
+  eachCents: number;
+  lat: number;
+  lng: number;
+  partner: true;
+  demo: true; // demo data until real partner deals are signed
+};
+
+/** Partner venues per city (lower-case "city, st"). Demo data: not confirmed partners yet. */
+export const PARTNERS: Record<string, Partner[]> = {
+  "austin, tx": [
+    { name: "Austin Bouldering Project", neighborhood: "East Austin", category: "climbing gym, gear included", eachCents: 3800, lat: 30.2603, lng: -97.6965, partner: true, demo: true },
+    { name: "Mozart's Coffee Roasters", neighborhood: "Lake Austin", category: "lakeside coffee and dessert", eachCents: 1500, lat: 30.2953, lng: -97.7846, partner: true, demo: true },
+    { name: "ColdTowne Theater", neighborhood: "North Loop", category: "improv comedy show", eachCents: 2000, lat: 30.3176, lng: -97.7182, partner: true, demo: true },
+    { name: "Kung Fu Saloon", neighborhood: "Rainey Street", category: "bar with arcade games", eachCents: 3000, lat: 30.2587, lng: -97.7389, partner: true, demo: true },
+  ],
+};
+
+export function partnersFor(city: string): Partner[] {
+  return PARTNERS[city.trim().toLowerCase()] ?? [];
+}
+
+/* ---------- sample plans (fallback when the AI is off, slow or wrong) ---------- */
+
+export type SamplePlan = {
+  title: string;
+  summary: string;
+  neighborhood: string;
+  offsetMinutes: number; // start this long after the time window opens
+  eachCents: number;
+  steps: string[];
+  fits: Personality[];
+  searchHint: string;
+  partnerName: string | null;
+  vibe: Vibe | "any";
+};
+
+/** Austin samples. The first one is the $38.00 partner plan the juror path expects. */
+export const SAMPLE_PLANS: Record<string, SamplePlan[]> = {
+  "austin, tx": [
+    {
+      title: "Bouldering, then tacos",
+      summary: "Climb easy routes together, then walk to East Austin taco trucks.",
+      neighborhood: "East Austin",
+      offsetMinutes: 90,
+      eachCents: 3800,
+      steps: ["Meet at Austin Bouldering Project", "Climb for an hour, gear included", "Tacos at a nearby truck"],
+      fits: ["explorer", "planner"],
+      searchHint: "Austin Bouldering Project",
+      partnerName: "Austin Bouldering Project",
+      vibe: "active",
+    },
+    {
+      title: "Improv night, North Loop",
+      summary: "Catch a short improv set, then grab late snacks nearby.",
+      neighborhood: "North Loop",
+      offsetMinutes: 60,
+      eachCents: 2000,
+      steps: ["Meet at ColdTowne Theater", "Watch the improv show", "Late bite on North Loop Blvd"],
+      fits: ["nightowl", "homebody"],
+      searchHint: "ColdTowne Theater",
+      partnerName: "ColdTowne Theater",
+      vibe: "chill",
+    },
+    {
+      title: "Lady Bird Lake paddle",
+      summary: "Rent paddleboards on the lake, then cool off with drinks on the shore.",
+      neighborhood: "Zilker",
+      offsetMinutes: 0,
+      eachCents: 3000,
+      steps: ["Meet at a paddleboard rental", "Paddle for an hour", "Drinks by the water"],
+      fits: ["explorer"],
+      searchHint: "paddleboard rental Lady Bird Lake",
+      partnerName: null,
+      vibe: "active",
+    },
+    {
+      title: "Lakeside coffee and cake",
+      summary: "Slow coffee and dessert on the deck over Lake Austin.",
+      neighborhood: "Lake Austin",
+      offsetMinutes: 30,
+      eachCents: 1500,
+      steps: ["Meet at Mozart's Coffee Roasters", "Share desserts on the deck", "Short walk by the water"],
+      fits: ["homebody", "planner"],
+      searchHint: "Mozart's Coffee Roasters",
+      partnerName: "Mozart's Coffee Roasters",
+      vibe: "chill",
+    },
+    {
+      title: "Rainey Street game night",
+      summary: "Arcade games and drinks in a bungalow bar on Rainey Street.",
+      neighborhood: "Rainey Street",
+      offsetMinutes: 120,
+      eachCents: 3000,
+      steps: ["Meet at Kung Fu Saloon", "Play arcade and yard games", "Walk the street after"],
+      fits: ["nightowl", "explorer"],
+      searchHint: "Kung Fu Saloon Rainey Street",
+      partnerName: "Kung Fu Saloon",
+      vibe: "active",
+    },
+  ],
+};
+
+/** For any other city: plans with no venue names, so nothing is made up. */
+export const GENERIC_SAMPLES: SamplePlan[] = [
+  {
+    title: "Climbing gym, then dinner",
+    summary: "Try easy climbing routes together, then share a casual dinner nearby.",
+    neighborhood: "Near the group's middle",
+    offsetMinutes: 60,
+    eachCents: 3500,
+    steps: ["Meet at a climbing gym", "Climb for an hour", "Casual dinner nearby"],
+    fits: ["explorer", "planner"],
+    searchHint: "climbing gym",
+    partnerName: null,
+    vibe: "active",
+  },
+  {
+    title: "Board game café night",
+    summary: "Pick a few games, order snacks, and settle in for a cozy evening.",
+    neighborhood: "Near the group's middle",
+    offsetMinutes: 30,
+    eachCents: 1500,
+    steps: ["Meet at a board game café", "Play two or three games", "Dessert if you're hungry"],
+    fits: ["homebody", "planner"],
+    searchHint: "board game cafe",
+    partnerName: null,
+    vibe: "chill",
+  },
+  {
+    title: "Comedy show, late bite",
+    summary: "Catch a stand-up or improv show, then find late-night food.",
+    neighborhood: "Downtown",
+    offsetMinutes: 90,
+    eachCents: 2500,
+    steps: ["Meet at a comedy club", "Watch the show", "Late-night food after"],
+    fits: ["nightowl", "explorer"],
+    searchHint: "comedy club",
+    partnerName: null,
+    vibe: "chill",
+  },
+  {
+    title: "Food hall crawl",
+    summary: "Everyone picks one stall, then you share plates at one long table.",
+    neighborhood: "Downtown",
+    offsetMinutes: 0,
+    eachCents: 2500,
+    steps: ["Meet at a food hall", "Each picks a stall", "Share at one table"],
+    fits: ["explorer", "homebody"],
+    searchHint: "food hall",
+    partnerName: null,
+    vibe: "any",
+  },
+  {
+    title: "Bowling and arcade",
+    summary: "A few frames of bowling and some arcade games with snacks.",
+    neighborhood: "Near the group's middle",
+    offsetMinutes: 60,
+    eachCents: 3000,
+    steps: ["Meet at a bowling alley", "Bowl two games", "Arcade and snacks"],
+    fits: ["nightowl", "planner"],
+    searchHint: "bowling alley",
+    partnerName: null,
+    vibe: "active",
+  },
+];
+
 /* ---------- Crew Pass extras ---------- */
 
 export const HISTORY = [
-  { date: "Oct 17", title: "Karaoke night", place: "Sing Sing Avenue A", went: 5 },
-  { date: "Sep 13", title: "Picnic and frisbee", place: "Prospect Park", went: 4 },
+  { date: "Oct 17", title: "Karaoke night", place: "Rainey Street", went: 5 },
+  { date: "Sep 13", title: "Picnic and frisbee", place: "Zilker Park", went: 4 },
 ];
 
 export const NEXT_PROPOSAL = {
-  title: "Dumpling dinner",
+  title: "Taco crawl",
   when: "Sat Dec 12, 7:30 PM",
   why: "Everyone's free that evening and it fits every budget",
 };
@@ -231,7 +434,7 @@ export const NEXT_PROPOSAL = {
 export const PLAN_FEATURES = {
   everyday: [
     "Dates, budget and vibe matching",
-    "Three ideas and a group vote",
+    "Three AI-planned ideas and a group vote",
     "The plan on everyone's calendar",
     "A recap after",
   ],
@@ -242,5 +445,10 @@ export const PLAN_FEATURES = {
     "Cost split with settle-up links",
     "Reminders to people who haven't answered",
   ],
-  pass: ["Unlimited big plans", "The next hangout proposed automatically", "Full group history"],
+  pass: [
+    "No $2 booking fee on 4 hangouts a month",
+    "5 ideas to vote on instead of 3",
+    "Unlimited big plans",
+    "Full group history",
+  ],
 };

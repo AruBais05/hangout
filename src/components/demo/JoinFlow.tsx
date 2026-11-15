@@ -4,50 +4,48 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Icon from "@/components/Icon";
-import { BUDGETS, PERSONALITIES, QUIZ, SLOTS, SLOT_HOURS } from "@/lib/config";
-import { formatPrice } from "@/lib/money";
-import { budgetKind, calendarBusy, cellKey, dayLabel, days, meetingOf, personalityOf, purposeOf } from "@/lib/plan";
-import { update, useDemo, type CellState } from "@/lib/store";
+import LocationPicker, { type Picked } from "@/components/LocationPicker";
+import { BUDGET_RANGES, DEAL_BREAKERS, PERSONALITIES, SLOTS, SLOT_HOURS, TRAVEL_MINUTES, type QuizQuestion, type TravelMinutes } from "@/lib/config";
+import { calendarBusy, cellKey, dayLabel, days, meetingOf, personalityOf, purposeOf, quizOf } from "@/lib/plan";
+import { update, useDemo, type CellState, type Me } from "@/lib/store";
 import s from "./screen.module.css";
 import styles from "./JoinFlow.module.css";
 
-type Step = { kind: "times" } | { kind: "q"; i: number } | { kind: "result" };
+// Fixed questions (ours, never the AI's): name, location + travel, budget, deal-breakers.
+// Then the group's 5 personality questions (AI-written when available, the same for everyone).
+const FIXED = ["name", "where", "budget", "deal"] as const;
+type Fixed = (typeof FIXED)[number];
+type Step = { kind: "times" } | { kind: "fixed"; id: Fixed } | { kind: "q"; i: number } | { kind: "result" };
 
-const BUDGET_ID = "budget";
-
+/** Waits for saved demo state, so a returning user's answers are filled in. */
 export default function JoinFlow({ guest = false }: { guest?: boolean }) {
+  const [, ready] = useDemo();
+  return ready ? <Flow guest={guest} /> : <div className={s.screen} aria-busy="true" />;
+}
+
+function Flow({ guest }: { guest: boolean }) {
   const router = useRouter();
   const [state] = useDemo();
   const m = meetingOf(state);
   const dayList = days(m.from, m.to);
-  const kind = budgetKind(m);
+  // Locked when the personality part starts, so a late AI quiz can't swap questions mid-way.
+  const [locked, setLocked] = useState<QuizQuestion[] | null>(null);
+  const questions = locked ?? quizOf(state);
+  const aiWritten = state.groupQuiz?.source === "ai";
 
   const [step, setStep] = useState<Step>({ kind: "times" });
-  const [name, setName] = useState("");
   const [cells, setCells] = useState<Record<string, CellState>>({});
   const [calCells, setCalCells] = useState<string[]>([]);
   const [busyLabels, setBusyLabels] = useState<Record<string, string>>({});
   const [connected, setConnected] = useState(false);
-  const [quiz, setQuiz] = useState<Record<string, string[]>>({});
-  const [budget, setBudget] = useState<number | null>(null);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [me, setMe] = useState<Me>(state.me);
+  const [city, setCity] = useState<{ name: string; center: [number, number] }>({ name: m.city, center: m.center });
 
-  // The quiz: three personality questions, a private budget, then two preferences.
-  const questions = [
-    QUIZ[0],
-    QUIZ[1],
-    QUIZ[2],
-    {
-      id: BUDGET_ID,
-      q: "What can you spend?",
-      options: BUDGETS[kind].map((b, i, all) => ({
-        label: i === all.length - 1 ? `${formatPrice(b)}+` : `Up to ${formatPrice(b)}`,
-      })),
-    },
-    QUIZ[3],
-    QUIZ[4],
-  ];
-
+  const total = FIXED.length + questions.length;
+  const position = step.kind === "fixed" ? FIXED.indexOf(step.id) : step.kind === "q" ? FIXED.length + step.i : 0;
   const freeCount = Object.values(cells).filter((v) => v === "free").length;
+  const firstName = me.name.trim();
 
   function toggle(key: string) {
     setCells((c) => {
@@ -92,53 +90,90 @@ export default function JoinFlow({ guest = false }: { guest?: boolean }) {
     setConnected(false);
   }
 
-  function choose(qi: number, label: string, multi?: boolean) {
-    const q = questions[qi];
-    if (q.id === BUDGET_ID) {
-      setBudget(BUDGETS[kind][q.options.findIndex((o) => o.label === label)]);
-      setQuiz((z) => ({ ...z, [q.id]: [label] }));
-    } else if (multi) {
-      setQuiz((z) => {
-        const cur = z[q.id] ?? [];
-        if (label === "None") return { ...z, [q.id]: ["None"] };
-        const without = cur.filter((x) => x !== "None");
-        return {
-          ...z,
-          [q.id]: without.includes(label) ? without.filter((x) => x !== label) : [...without, label],
-        };
-      });
-      return;
-    } else {
-      setQuiz((z) => ({ ...z, [q.id]: [label] }));
+  function go(next: Step) {
+    setStep(next);
+    window.scrollTo({ top: 0 });
+  }
+
+  function nextFrom(id: Fixed) {
+    const i = FIXED.indexOf(id);
+    if (i + 1 >= FIXED.length) setLocked(quizOf(state));
+    go(i + 1 < FIXED.length ? { kind: "fixed", id: FIXED[i + 1] } : { kind: "q", i: 0 });
+  }
+
+  function back() {
+    if (step.kind === "fixed") {
+      const i = FIXED.indexOf(step.id);
+      go(i === 0 ? { kind: "times" } : { kind: "fixed", id: FIXED[i - 1] });
+    } else if (step.kind === "q") {
+      go(step.i === 0 ? { kind: "fixed", id: FIXED[FIXED.length - 1] } : { kind: "q", i: step.i - 1 });
     }
-    setTimeout(() => advance(qi), 220);
   }
 
-  function advance(qi: number) {
-    if (qi + 1 < questions.length) setStep({ kind: "q", i: qi + 1 });
-    else finish();
+  function picked(p: Picked) {
+    setMe((x) => ({ ...x, point: p.point, area: p.area || p.city || "Nearby" }));
+    // The host's pin sets the group's city; the demo crew moves with it.
+    if (!guest && p.city) setCity({ name: p.city, center: p.point });
   }
 
-  function finish() {
+  function answer(qi: number, ai: number) {
+    setAnswers((a) => ({ ...a, [qi]: ai }));
+    setTimeout(() => {
+      if (qi + 1 < questions.length) go({ kind: "q", i: qi + 1 });
+      else finish({ ...answers, [qi]: ai });
+    }, 220);
+  }
+
+  function finish(final: Record<number, number>) {
     if (!guest) {
-      update({ cells, calCells, calConnected: connected, quiz, budgetCents: budget, joined: true });
+      update({
+        cells,
+        calCells,
+        calConnected: connected,
+        answers: final,
+        me: { ...me, name: firstName.slice(0, 20) },
+        meeting: { ...m, city: city.name, center: city.center },
+        joined: true,
+      });
     }
-    setStep({ kind: "result" });
+    go({ kind: "result" });
   }
+
+  const progress = (
+    <div className={styles.quizHead}>
+      <span className={s.small}>
+        Question {position + 1} of {total}
+      </span>
+      <span className={styles.dots} aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => (
+          <span key={i} className={i <= position ? styles.dotOn : styles.dot} />
+        ))}
+      </span>
+    </div>
+  );
+
+  const backLink = (
+    <button type="button" className={s.textLink} onClick={back}>
+      Back
+    </button>
+  );
 
   /* ---------- result ---------- */
   if (step.kind === "result") {
-    const type = PERSONALITIES[personalityOf(quiz)];
+    const type = PERSONALITIES[personalityOf(answers, questions)];
     return (
       <div className={s.screen}>
         <section className={styles.result} role="status">
-          <p className={styles.resultKicker}>You&rsquo;re</p>
+          <p className={styles.resultKicker}>{firstName ? `${firstName}, you're a` : "You're a"}</p>
           <p className={styles.resultName}>{type.name}</p>
           <p className={styles.resultLine}>{type.line}</p>
         </section>
+        <p className={s.small}>
+          Others see you as <strong>{firstName || "You"} · {me.area || "Nearby"}</strong>. Never your exact address.
+        </p>
         <p className={s.lede}>
           {guest
-            ? `You're in${name ? `, ${name}` : ""}. Your times are saved. The host will share the plan when everyone has joined.`
+            ? "You're in. The host will share the plan when everyone has joined."
             : "Your times and answers are saved. Your budget stays private."}
         </p>
         <div className={s.actions}>
@@ -156,65 +191,166 @@ export default function JoinFlow({ guest = false }: { guest?: boolean }) {
     );
   }
 
-  /* ---------- quiz ---------- */
+  /* ---------- personality questions ---------- */
   if (step.kind === "q") {
     const q = questions[step.i];
-    const picked = quiz[q.id] ?? [];
-    const multi = "multi" in q && q.multi;
     return (
       <div className={s.screen}>
-        <div className={styles.quizHead}>
-          <span className={s.small}>
-            Question {step.i + 1} of {questions.length}
-          </span>
-          <span className={styles.dots} aria-hidden="true">
-            {questions.map((_, i) => (
-              <span key={i} className={i <= step.i ? styles.dotOn : styles.dot} />
-            ))}
-          </span>
-        </div>
-        <fieldset className={styles.quiz} key={q.id}>
-          <legend className={s.title}>{q.q}</legend>
-          {q.id === BUDGET_ID && (
+        {progress}
+        <fieldset className={styles.quiz} key={`q${step.i}`}>
+          <legend className={s.title}>{q.text}</legend>
+          {aiWritten && (
             <p className={`${s.small} ${styles.private}`}>
-              <Icon name="lock" size={16} />
-              Only you see this. The group only sees what works for everyone.
+              <Icon name="sparkle" size={16} />
+              Questions written by AI for this group
             </p>
           )}
           <div className={styles.answers}>
-            {q.options.map((o) => (
-              <label key={o.label} className={styles.answer}>
-                <input
-                  type={multi ? "checkbox" : "radio"}
-                  name={q.id}
-                  checked={picked.includes(o.label)}
-                  onChange={() => choose(step.i, o.label, !!multi)}
-                />
-                <span>{o.label}</span>
+            {q.answers.map((a, ai) => (
+              <label key={a.text} className={styles.answer}>
+                <input type="radio" name={`q${step.i}`} checked={answers[step.i] === ai} onChange={() => answer(step.i, ai)} />
+                <span>{a.text}</span>
               </label>
             ))}
           </div>
         </fieldset>
         <div className={s.actions}>
-          {multi ? (
-            <button
-              type="button"
-              className={s.primary}
-              disabled={picked.length === 0}
-              onClick={() => advance(step.i)}
-            >
-              {step.i + 1 === questions.length ? "Finish" : "Next"}
-            </button>
-          ) : (
-            <p className={s.small}>Tap an answer to continue.</p>
-          )}
-          <button
-            type="button"
-            className={s.textLink}
-            onClick={() => setStep(step.i === 0 ? { kind: "times" } : { kind: "q", i: step.i - 1 })}
-          >
-            Back
+          <p className={s.small}>Tap an answer to continue.</p>
+          {backLink}
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------- fixed questions ---------- */
+  if (step.kind === "fixed" && step.id === "name") {
+    return (
+      <form className={s.screen} onSubmit={(e) => { e.preventDefault(); if (firstName) nextFrom("name"); }}>
+        {progress}
+        <label className={styles.field}>
+          <span className={s.title}>What&rsquo;s your first name?</span>
+          <input
+            type="text"
+            value={me.name}
+            maxLength={20}
+            autoComplete="given-name"
+            autoFocus
+            onChange={(e) => setMe((x) => ({ ...x, name: e.target.value.replace(/[\r\n]/g, "") }))}
+          />
+        </label>
+        <p className={s.small}>Friends see this name on the plan. Up to 20 letters.</p>
+        <div className={s.actions}>
+          <button type="submit" className={s.primary} disabled={!firstName}>
+            Next
           </button>
+          {backLink}
+        </div>
+      </form>
+    );
+  }
+
+  if (step.kind === "fixed" && step.id === "where") {
+    return (
+      <div className={s.screen}>
+        {progress}
+        <div>
+          <h1 className={s.title}>Where are you coming from?</h1>
+          <p className={s.lede} style={{ marginTop: 8 }}>
+            {guest ? "Your rough area helps pick a place that's fair for everyone." : "Your pin also sets the group's city."}
+          </p>
+        </div>
+        <LocationPicker center={city.center} city={city.name} value={me.point} onPick={picked} />
+        <p className={styles.cityLine}>
+          <Icon name="pin" size={16} />
+          <span>
+            City: <strong>{city.name}</strong>
+            {me.area ? <> · You: {me.area}</> : null}
+          </span>
+        </p>
+        <fieldset className={styles.quiz}>
+          <legend className={s.label}>How far will you travel?</legend>
+          <div className={styles.chipsRow}>
+            {TRAVEL_MINUTES.map((t) => (
+              <label key={t} className={styles.answer}>
+                <input type="radio" name="travel" checked={me.travel === t} onChange={() => setMe((x) => ({ ...x, travel: t as TravelMinutes }))} />
+                <span>{t} min</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className={s.actions}>
+          <button type="button" className={s.primary} onClick={() => nextFrom("where")}>
+            {me.point ? "Next" : "Skip, use the city center"}
+          </button>
+          {backLink}
+        </div>
+      </div>
+    );
+  }
+
+  if (step.kind === "fixed" && step.id === "budget") {
+    return (
+      <div className={s.screen}>
+        {progress}
+        <fieldset className={styles.quiz}>
+          <legend className={s.title}>What can you spend, per person?</legend>
+          <p className={`${s.small} ${styles.private}`}>
+            <Icon name="lock" size={16} />
+            Only you see this. The group only sees what works for everyone.
+          </p>
+          <div className={styles.answers}>
+            {BUDGET_RANGES.map((b) => (
+              <label key={b.id} className={styles.answer}>
+                <input
+                  type="radio"
+                  name="budget"
+                  checked={me.budget === b.id}
+                  onChange={() => {
+                    setMe((x) => ({ ...x, budget: b.id }));
+                    setTimeout(() => nextFrom("budget"), 220);
+                  }}
+                />
+                <span>{b.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className={s.actions}>
+          <p className={s.small}>Tap an answer to continue.</p>
+          {backLink}
+        </div>
+      </div>
+    );
+  }
+
+  if (step.kind === "fixed" && step.id === "deal") {
+    const pickedList = me.dealBreakers;
+    const flip = (label: string) =>
+      setMe((x) => {
+        if (label === "None") return { ...x, dealBreakers: ["None"] };
+        const cur = x.dealBreakers.filter((d) => d !== "None");
+        return { ...x, dealBreakers: cur.includes(label) ? cur.filter((d) => d !== label) : [...cur, label] };
+      });
+    return (
+      <div className={s.screen}>
+        {progress}
+        <fieldset className={styles.quiz}>
+          <legend className={s.title}>Any deal-breakers?</legend>
+          <p className={s.small}>Pick all that apply.</p>
+          <div className={styles.answers}>
+            {DEAL_BREAKERS.map((d) => (
+              <label key={d} className={styles.answer}>
+                <input type="checkbox" checked={pickedList.includes(d)} onChange={() => flip(d)} />
+                <span>{d}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className={s.actions}>
+          <button type="button" className={s.primary} disabled={pickedList.length === 0} onClick={() => nextFrom("deal")}>
+            Next
+          </button>
+          {backLink}
         </div>
       </div>
     );
@@ -227,17 +363,10 @@ export default function JoinFlow({ guest = false }: { guest?: boolean }) {
         <h1 className={s.title}>{guest ? "You're invited" : "When are you free?"}</h1>
         <p className={s.lede} style={{ marginTop: 8 }}>
           {guest
-            ? `${purposeOf(m).label}. Add your name, tap the times you're free, then take a 1-minute quiz.`
+            ? `${purposeOf(m).label} in ${m.city}. Tap the times you're free, then take a 1-minute quiz.`
             : "Tap every time that works. You can change any cell."}
         </p>
       </div>
-
-      {guest && (
-        <label className={styles.field}>
-          <span>Your name</span>
-          <input type="text" value={name} maxLength={30} autoComplete="given-name" onChange={(e) => setName(e.target.value)} />
-        </label>
-      )}
 
       <div className={styles.calRow}>
         {connected ? (
@@ -299,15 +428,13 @@ export default function JoinFlow({ guest = false }: { guest?: boolean }) {
         <button
           type="button"
           className={s.primary}
-          disabled={freeCount === 0 || (guest && !name.trim())}
-          onClick={() => setStep({ kind: "q", i: 0 })}
+          disabled={freeCount === 0}
+          onClick={() => go({ kind: "fixed", id: "name" })}
         >
           Next: quick quiz
         </button>
         <p className={s.small} aria-live="polite">
-          {guest && !name.trim()
-            ? "Add your name to continue."
-            : freeCount === 0
+          {freeCount === 0
               ? "Tap at least one free time."
               : `${freeCount} free time${freeCount > 1 ? "s" : ""}`}
         </p>

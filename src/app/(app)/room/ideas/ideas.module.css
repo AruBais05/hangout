@@ -35,6 +35,12 @@
   }
 }
 
+.card {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 8px;
+}
+
 .idea {
   position: relative;
   cursor: pointer;
@@ -130,4 +136,73 @@
   background: var(--white);
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+.summary {
+  display: block;
+  line-height: 1.4;
+}
+
+.forYou {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--white);
+  font-size: 0.92rem;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.skeleton {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  min-height: 150px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.skeleton span {
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--line), var(--white), var(--line));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+.skeleton span:first-child {
+  width: 60%;
+  height: 20px;
+}
+
+.skeleton span:last-child {
+  width: 40%;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton span {
+    animation: none;
+  }
 }

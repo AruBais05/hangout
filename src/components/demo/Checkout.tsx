@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import { DEMO_CARD, PRICES } from "@/lib/config";
 import { formatPrice } from "@/lib/money";
@@ -52,6 +52,19 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
   const [errors, setErrors] = useState<Errors>({});
   const [paying, setPaying] = useState(false);
   const [done, setDone] = useState(false);
+  // "stripe" when a Stripe test key is set on the server, "demo" otherwise.
+  const [mode, setMode] = useState<"checking" | "stripe" | "demo">("checking");
+  const [stripeError, setStripeError] = useState("");
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/checkout")
+      .then((r) => r.json())
+      .then((d) => alive && setMode(d.enabled ? "stripe" : "demo"))
+      .catch(() => alive && setMode("demo"));
+    return () => {
+      alive = false;
+    };
+  }, []);
   const refs = {
     number: useRef<HTMLInputElement>(null),
     expiry: useRef<HTMLInputElement>(null),
@@ -73,8 +86,31 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
     setErrors({});
   }
 
+  async function payWithStripe() {
+    setPaying(true);
+    setStripeError("");
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item, plan, back: item === "pass" ? "/pass" : "/room/unlock/pay" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Stripe didn't answer.");
+      window.location.assign(data.url);
+    } catch (err) {
+      setPaying(false);
+      setStripeError(err instanceof Error ? err.message : "Stripe didn't answer.");
+    }
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "stripe") {
+      payWithStripe();
+      return;
+    }
+    if (mode !== "demo") return;
     const errs = validate(f);
     setErrors(errs);
     const first = (Object.keys(refs) as (keyof Fields)[]).find((k) => errs[k]);
@@ -179,6 +215,24 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
         </fieldset>
       )}
 
+      {mode === "stripe" && (
+        <div className={styles.demoCard}>
+          <p>
+            <strong>Stripe test card:</strong> {DEMO_CARD}, any future date, any CVC, any ZIP. You&rsquo;ll type
+            it on Stripe&rsquo;s secure page next.
+          </p>
+          {stripeError && (
+            <p className={styles.error} role="alert">
+              {stripeError}{" "}
+              <button type="button" className={s.textLink} onClick={() => setMode("demo")}>
+                Use the demo form instead
+              </button>
+            </p>
+          )}
+        </div>
+      )}
+
+      {mode === "demo" && (
       <div className={styles.demoCard}>
         <p>
           <strong>Demo card:</strong> {DEMO_CARD}, any future date, any CVC, any ZIP
@@ -187,7 +241,9 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
           Fill it in for me
         </button>
       </div>
+      )}
 
+      {mode === "demo" && (
       <div className={styles.fields}>
         {field(
           "number",
@@ -216,19 +272,24 @@ export default function Checkout({ item }: { item: "unlock" | "pass" }) {
           (v) => v.replace(/\D/g, ""),
         )}
       </div>
+      )}
 
       <div className={s.actions}>
-        <button type="submit" className={s.primary} disabled={paying}>
+        <button type="submit" className={s.primary} disabled={paying || mode === "checking"}>
           {paying ? (
             <>
               <span className={s.spinner} aria-hidden="true" />
-              Paying…
+              {mode === "stripe" ? "Opening Stripe…" : "Paying…"}
             </>
+          ) : mode === "stripe" ? (
+            `Pay ${formatPrice(priceCents)} with Stripe`
           ) : (
             `Pay ${formatPrice(priceCents)}`
           )}
         </button>
-        <p className={s.small}>Demo checkout. No real charge.</p>
+        <p className={s.small}>
+          {mode === "stripe" ? "Stripe test mode. No real charge." : "Demo checkout. No real charge."}
+        </p>
       </div>
     </form>
   );
