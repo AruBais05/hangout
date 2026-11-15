@@ -1,0 +1,96 @@
+.ticket {
+  background: var(--purple);
+  color: var(--white);
+  border-radius: var(--radius-m);
+  padding: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.when {
+  font-weight: 700;
+  color: var(--lilac);
+}
+
+.planTitle {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-stretch: 108%;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.where {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--lilac);
+}
+
+.where svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.perf {
+  border-top: 2px dashed rgb(255 255 255 / 0.45);
+  margin: 8px -20px 4px;
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+
+.faces {
+  display: flex;
+}
+
+.faces span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--purple-deep);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.8rem;
+  margin-left: -6px;
+  box-shadow: 0 0 0 2px var(--purple);
+}
+
+.faces span:first-child {
+  margin-left: 0;
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  background: var(--lilac);
+  color: var(--purple-deep);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.cal {
+  display: grid;
+}
+
+.calButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.calButtons > * {
+  font-size: 0.92rem;
+  padding: 10px;
+}

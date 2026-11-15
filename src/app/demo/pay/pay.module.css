@@ -1,0 +1,61 @@
+.bill {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.bill > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bill dt {
+  color: var(--purple-ink);
+}
+
+.bill dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.total {
+  border-top: 2px dashed var(--purple-soft);
+  padding-top: 12px;
+}
+
+.total dt,
+.total dd {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.summary {
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+.skipFee {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--purple);
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-underline-offset: 3px;
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  background: var(--lilac);
+  color: var(--purple-deep);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
